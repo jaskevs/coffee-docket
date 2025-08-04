@@ -11,6 +11,10 @@ import { SizeForm } from "./size-form"
 import { AddOnForm } from "./add-on-form"
 import { supabaseService, type MenuItem, type MenuSize, type MenuAddon } from "@/lib/supabase-service"
 
+interface MenuManagementProps {
+  onNavigate: (page: string) => void
+}
+
 const menuCategories = [
   { id: "coffee", name: "Coffee", icon: "☕" },
   { id: "tea", name: "Tea", icon: "🍵" },
@@ -18,7 +22,7 @@ const menuCategories = [
   { id: "pastry", name: "Pastries", icon: "🥐" },
 ]
 
-export function MenuManagement() {
+export function MenuManagement({ onNavigate }: MenuManagementProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuSize[]>([])
   const [addons, setAddons] = useState<MenuAddon[]>([])
@@ -149,7 +153,7 @@ export function MenuManagement() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.history.back()}
+            onClick={() => onNavigate("admin-dashboard")}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />

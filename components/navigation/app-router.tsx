@@ -87,7 +87,7 @@ export function AppRouter() {
 
             case "menu-management":
               return user.role === "admin" ? (
-                <MenuManagement />
+                <MenuManagement onNavigate={handleNavigate} />
               ) : (
                 <div className="p-6 text-center">
                   <h2 className="text-xl font-semibold text-red-600">Access Denied</h2>

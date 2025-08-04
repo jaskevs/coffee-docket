@@ -1,0 +1,44 @@
+{
+    "project_name": "Coffee Docket App",
+    "description": "A mobile-optimized coffee purchase tracking web app built with React/Next.js and Supabase. Handles customer coffee balances, transactions, admin management, and real-time updates.",
+    "tech_stack": [
+      "React",
+      "Next.js", 
+      "TypeScript",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "Supabase",
+      "MailerSend"
+    ],
+    "key_features": [
+      "Customer dashboard with coffee balance tracking",
+      "Admin dashboard with customer management",
+      "Real-time transaction updates",
+      "Menu management system",
+      "Email notifications",
+      "Mobile-first responsive design"
+    ],
+    "file_patterns": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "pages/**/*.{js,jsx,ts,tsx}",
+      "app/**/*.{js,jsx,ts,tsx}",
+      "components/**/*.{js,jsx,ts,tsx}",
+      "lib/**/*.{js,ts}",
+      "utils/**/*.{js,ts}",
+      "hooks/**/*.{js,ts}",
+      "types/**/*.{js,ts}"
+    ],
+    "ignore_patterns": [
+      "node_modules/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      ".vercel/**",
+      "*.log"
+    ],
+    "context_files": [
+      "README.md",
+      "package.json",
+      ".env.example"
+    ]
+  }
