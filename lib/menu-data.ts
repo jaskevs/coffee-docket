@@ -1,0 +1,104 @@
+import type { MenuItem, MenuSize, MenuAddon } from "@/types/menu"
+
+export const menuCategories = [
+  { id: "coffee", name: "Coffee", icon: "☕" },
+  { id: "tea", name: "Tea", icon: "🍵" },
+  { id: "pastries", name: "Pastries", icon: "🥐" },
+  { id: "sandwiches", name: "Sandwiches", icon: "🥪" },
+]
+
+export const mockMenuItems: MenuItem[] = [
+  {
+    id: "1",
+    name: "Espresso",
+    description: "Rich and bold espresso shot",
+    category: "coffee",
+    basePrice: 2.5,
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    name: "Cappuccino",
+    description: "Espresso with steamed milk and foam",
+    category: "coffee",
+    basePrice: 4.0,
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    name: "Latte",
+    description: "Espresso with steamed milk",
+    category: "coffee",
+    basePrice: 4.5,
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "4",
+    name: "Green Tea",
+    description: "Fresh green tea leaves",
+    category: "tea",
+    basePrice: 3.0,
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "5",
+    name: "Croissant",
+    description: "Buttery, flaky pastry",
+    category: "pastries",
+    basePrice: 3.5,
+    isAvailable: true,
+    createdAt: new Date().toISOString(),
+  },
+]
+
+export const mockSizes: MenuSize[] = [
+  {
+    id: "1",
+    name: "Small",
+    priceModifier: 0,
+    isAvailable: true,
+  },
+  {
+    id: "2",
+    name: "Medium",
+    priceModifier: 0.5,
+    isAvailable: true,
+  },
+  {
+    id: "3",
+    name: "Large",
+    priceModifier: 1.0,
+    isAvailable: true,
+  },
+]
+
+export const mockAddons: MenuAddon[] = [
+  {
+    id: "1",
+    name: "Extra Shot",
+    price: 0.75,
+    isAvailable: true,
+  },
+  {
+    id: "2",
+    name: "Oat Milk",
+    price: 0.5,
+    isAvailable: true,
+  },
+  {
+    id: "3",
+    name: "Vanilla Syrup",
+    price: 0.5,
+    isAvailable: true,
+  },
+  {
+    id: "4",
+    name: "Whipped Cream",
+    price: 0.5,
+    isAvailable: true,
+  },
+]
