@@ -244,7 +244,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{size.displayName || size.name}</h3>
-                      <p className="text-sm text-gray-600">+${size.priceModifier.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">${size.priceModifier.toFixed(2)}</p>
                       {size.description && <p className="text-xs text-gray-500">{size.description}</p>}
                       <Badge variant={size.isAvailable ? "default" : "secondary"} className="mt-1">
                         {size.isAvailable ? "Available" : "Unavailable"}
@@ -288,7 +288,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{addon.name}</h3>
-                      <p className="text-sm text-gray-600">+${addon.priceModifier.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">${addon.priceModifier.toFixed(2)}</p>
                       <Badge variant={addon.isAvailable ? "default" : "secondary"} className="mt-1">
                         {addon.isAvailable ? "Available" : "Unavailable"}
                       </Badge>
