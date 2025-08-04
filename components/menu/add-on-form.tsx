@@ -8,14 +8,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Loader2 } from "lucide-react"
-import type { AddOnFormData, AddOn } from "@/types/menu"
+import type { MenuAddon } from "@/lib/supabase-service"
 
 interface AddOnFormProps {
-  addOn?: AddOn
-  onSubmit: (data: AddOnFormData) => Promise<void>
+  addon?: MenuAddon
+  onSave: (data: MenuAddon) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
 }
@@ -27,8 +26,8 @@ const addOnCategories = [
   { id: "dietary", name: "Dietary Options" },
 ]
 
-export function AddOnForm({ addOn, onSubmit, onCancel, isLoading = false }: AddOnFormProps) {
-  const [isActive, setIsActive] = useState(addOn?.isActive ?? true)
+export function AddOnForm({ addon, onSave, onCancel, isLoading = false }: AddOnFormProps) {
+  const [isAvailable, setIsAvailable] = useState(addon?.isAvailable ?? true)
 
   const {
     register,
@@ -36,35 +35,32 @@ export function AddOnForm({ addOn, onSubmit, onCancel, isLoading = false }: AddO
     formState: { errors },
     setValue,
     watch,
-  } = useForm<AddOnFormData>({
+  } = useForm<MenuAddon>({
     defaultValues: {
-      name: addOn?.name || "",
-      description: addOn?.description || "",
-      priceModifier: addOn?.priceModifier || 0,
-      category: addOn?.category || "",
-      isActive: addOn?.isActive ?? true,
+      id: addon?.id || "",
+      name: addon?.name || "",
+      description: addon?.description || "",
+      priceModifier: addon?.priceModifier || 0,
+      category: addon?.category || "",
+      isAvailable: addon?.isAvailable ?? true,
+      createdAt: addon?.createdAt || "",
+      updatedAt: addon?.updatedAt || "",
     },
   })
 
   const selectedCategory = watch("category")
 
-  const handleFormSubmit = async (data: AddOnFormData) => {
-    await onSubmit({
+
+  const handleFormSubmit = async (data: MenuAddon) => {
+    await onSave({
       ...data,
-      isActive,
+      isAvailable,
     })
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-gray-800">{addOn ? "Edit Add-on" : "Add New Add-on"}</CardTitle>
-        <CardDescription>
-          {addOn ? "Update the details of this add-on" : "Create a new add-on for menu items"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <div className="w-full">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -153,10 +149,10 @@ export function AddOnForm({ addOn, onSubmit, onCancel, isLoading = false }: AddO
             <div className="space-y-0.5">
               <Label className="text-sm font-medium text-gray-700">Status</Label>
               <p className="text-xs text-gray-600">
-                {isActive ? "This add-on is available for selection" : "This add-on is hidden from customers"}
+                {isAvailable ? "This add-on is available for selection" : "This add-on is hidden from customers"}
               </p>
             </div>
-            <Switch checked={isActive} onCheckedChange={setIsActive} className="data-[state=checked]:bg-green-500" />
+            <Switch checked={isAvailable} onCheckedChange={setIsAvailable} className="data-[state=checked]:bg-green-500" />
           </div>
 
           <Separator />
@@ -174,15 +170,14 @@ export function AddOnForm({ addOn, onSubmit, onCancel, isLoading = false }: AddO
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {addOn ? "Updating..." : "Creating..."}
+                  {addon ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                <>{addOn ? "Update Add-on" : "Create Add-on"}</>
+                <>{addon ? "Update Add-on" : "Create Add-on"}</>
               )}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   )
 }

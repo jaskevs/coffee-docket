@@ -10,24 +10,28 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { X, Plus, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { menuCategories } from "@/lib/menu-data" 
-import type { MenuFormData, MenuItem } from "@/types/menu"
+import type { MenuItem } from "@/lib/supabase-service"
 
 interface MenuItemFormProps {
-  item?: MenuItem
-  onSubmit: (data: MenuFormData) => Promise<void>
+  item?: MenuItem | null
+  onSave: (item: MenuItem) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
 }
 
-export function MenuItemForm({ item, onSubmit, onCancel, isLoading = false }: MenuItemFormProps) {
-  const [ingredients, setIngredients] = useState<string[]>(item?.ingredients || [])
-  const [newIngredient, setNewIngredient] = useState("")
-  const [isActive, setIsActive] = useState(item?.isActive ?? true)
+interface MenuFormData {
+  name: string
+  description: string
+  basePrice: number
+  category: string
+  isAvailable: boolean
+}
+
+export function MenuItemForm({ item, onSave, onCancel, isLoading = false }: MenuItemFormProps) {
+  const [isAvailable, setIsAvailable] = useState(item?.isAvailable ?? true)
 
   const {
     register,
@@ -41,51 +45,26 @@ export function MenuItemForm({ item, onSubmit, onCancel, isLoading = false }: Me
       description: item?.description || "",
       basePrice: item?.basePrice || 0,
       category: item?.category || "",
-      ingredients: item?.ingredients || [],
-      isActive: item?.isActive ?? true,
     },
   })
 
   const selectedCategory = watch("category")
 
   const handleFormSubmit = async (data: MenuFormData) => {
-    await onSubmit({
-      ...data,
-      ingredients,
-      isActive,
-    })
+    await onSave({
+      ...item,
+      name: data.name,
+      description: data.description,
+      basePrice: data.basePrice,
+      category: data.category,
+      isAvailable,
+    } as MenuItem)
   }
 
-  const addIngredient = () => {
-    if (newIngredient.trim() && !ingredients.includes(newIngredient.trim())) {
-      setIngredients([...ingredients, newIngredient.trim()])
-      setNewIngredient("")
-    }
-  }
-
-  const removeIngredient = (ingredient: string) => {
-    setIngredients(ingredients.filter((i) => i !== ingredient))
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      addIngredient()
-    }
-  }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-gray-800">
-          {item ? "Edit Menu Item" : "Add New Menu Item"}
-        </CardTitle>
-        <CardDescription>
-          {item ? "Update the details of this menu item" : "Create a new item for your menu"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <div className="w-full">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -171,52 +150,6 @@ export function MenuItemForm({ item, onSubmit, onCancel, isLoading = false }: Me
             </div>
           </div>
 
-          <Separator />
-
-          {/* Ingredients */}
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">Ingredients</Label>
-              <div className="flex space-x-2">
-                <Input
-                  value={newIngredient}
-                  onChange={(e) => setNewIngredient(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Add ingredient"
-                  className="flex-1 h-10"
-                />
-                <Button
-                  type="button"
-                  onClick={addIngredient}
-                  disabled={!newIngredient.trim()}
-                  className="h-10 px-4 bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {ingredients.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {ingredients.map((ingredient, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 border border-gray-300"
-                  >
-                    {ingredient}
-                    <button
-                      type="button"
-                      onClick={() => removeIngredient(ingredient)}
-                      className="ml-2 text-gray-500 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
 
           <Separator />
 
@@ -225,10 +158,10 @@ export function MenuItemForm({ item, onSubmit, onCancel, isLoading = false }: Me
             <div className="space-y-0.5">
               <Label className="text-sm font-medium text-gray-700">Status</Label>
               <p className="text-xs text-gray-600">
-                {isActive ? "This item is visible to customers" : "This item is hidden from customers"}
+                {isAvailable ? "This item is visible to customers" : "This item is hidden from customers"}
               </p>
             </div>
-            <Switch checked={isActive} onCheckedChange={setIsActive} className="data-[state=checked]:bg-green-500" />
+            <Switch checked={isAvailable} onCheckedChange={setIsAvailable} className="data-[state=checked]:bg-green-500" />
           </div>
 
           <Separator />
@@ -255,7 +188,6 @@ export function MenuItemForm({ item, onSubmit, onCancel, isLoading = false }: Me
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   )
 }

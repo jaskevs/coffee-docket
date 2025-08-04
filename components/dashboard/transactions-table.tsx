@@ -10,10 +10,11 @@ import type { Transaction } from "@/lib/supabase-service"
 
 interface TransactionsTableProps {
   transactions: Transaction[]
-  customerName: string
+  customerName?: string
+  showCustomerColumn?: boolean
 }
 
-export function TransactionsTable({ transactions, customerName }: TransactionsTableProps) {
+export function TransactionsTable({ transactions, customerName, showCustomerColumn = false }: TransactionsTableProps) {
   const [filterType, setFilterType] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
@@ -55,6 +56,19 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
         return <Coffee className="w-4 h-4" />
       default:
         return <Coffee className="w-4 h-4" />
+    }
+  }
+
+  const getTransactionBadgeVariant = (type: string) => {
+    switch (type) {
+      case "topup":
+        return "default"
+      case "serve":
+        return "destructive"
+      case "refund":
+        return "secondary"
+      default:
+        return "outline"
     }
   }
 
@@ -111,7 +125,7 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
                 <DollarSign className="w-5 h-5 text-green-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">{formatCurrency(summary.totalTopup)} spent</p>
+            {/* <p className="text-xs text-gray-500 mt-1">{formatCurrency(summary.totalTopup)} spent</p> */}
           </CardContent>
         </Card>
 
@@ -126,7 +140,7 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
                 <Coffee className="w-5 h-5 text-red-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">{formatCurrency(summary.totalSpent)} value</p>
+            {/* <p className="text-xs text-gray-500 mt-1">{formatCurrency(summary.totalSpent)} value</p> */}
           </CardContent>
         </Card>
 
@@ -143,7 +157,7 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
                 <Coffee className="w-5 h-5 text-blue-600" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Current balance</p>
+            {/* <p className="text-xs text-gray-500 mt-1">Current balance</p> */}
           </CardContent>
         </Card>
       </div>
@@ -154,7 +168,7 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
               <Calendar className="w-5 h-5 mr-2" />
-              Transaction History for {customerName}
+              {showCustomerColumn ? "All Transactions" : `Transaction History for ${customerName}`}
             </CardTitle>
             <div className="flex items-center space-x-2">
               <Select value={filterType} onValueChange={setFilterType}>
@@ -189,26 +203,33 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
-                          <p className="font-medium text-gray-900">{transaction.description}</p>
-                          <Badge variant="outline" className={`text-xs ${getTransactionColor(transaction.type)}`}>
+                          <p className="font-medium text-gray-900">
+                            {showCustomerColumn && (transaction.type === "serve" || transaction.type === "topup")
+                              ? `${transaction.customerName || "Unknown Customer"} - ${transaction.drinkName || "Coffee"}${transaction.sizeName ? ` (${transaction.sizeName.toLowerCase()})` : ""}`
+                              : transaction.description}
+                          </p>
+                          {/* <Badge
+                            variant={getTransactionBadgeVariant(transaction.type)}
+                            className="text-xs capitalize"
+                          >
                             {transaction.type}
-                          </Badge>
+                          </Badge> */}
                         </div>
                         <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
                           <span>{formatDate(transaction.createdAt)}</span>
-                          {transaction.drinkName && (
+                          {!showCustomerColumn && transaction.drinkName && (
                             <>
                               <span>•</span>
                               <span>{transaction.drinkName}</span>
                             </>
                           )}
-                          {transaction.sizeName && (
+                          {!showCustomerColumn && transaction.sizeName && (
                             <>
                               <span>•</span>
                               <span>{transaction.sizeName}</span>
                             </>
                           )}
-                          {transaction.addons && transaction.addons.length > 0 && (
+                          {!showCustomerColumn && transaction.addons && transaction.addons.length > 0 && (
                             <>
                               <span>•</span>
                               <span>{transaction.addons.join(", ")}</span>
@@ -225,11 +246,11 @@ export function TransactionsTable({ transactions, customerName }: TransactionsTa
                           className="text-sm font-medium"
                         >
                           {transaction.type === "serve" ? "-" : "+"}
-                          {transaction.coffeeCount} coffee{transaction.coffeeCount !== 1 ? "s" : ""}
+                          {transaction.type === "serve" ? " serve" : transaction.coffeeCount + " topup"}
                         </Badge>
-                        {transaction.amount && (
+                        {/* {transaction.amount && !(showCustomerColumn && transaction.type === "serve") && (
                           <span className="text-sm text-gray-600">{formatCurrency(transaction.amount)}</span>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   </div>

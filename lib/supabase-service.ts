@@ -50,7 +50,6 @@ export interface MenuItem {
   basePrice: number
   category: string
   isAvailable: boolean
-  ingredients?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -58,7 +57,9 @@ export interface MenuItem {
 export interface MenuSize {
   id: string
   name: string
+  displayName: string
   priceModifier: number
+  description: string
   isAvailable: boolean
   createdAt: string
   updatedAt: string
@@ -68,7 +69,7 @@ export interface MenuAddon {
   id: string
   name: string
   description: string
-  price: number
+  priceModifier: number
   category: string
   isAvailable: boolean
   createdAt: string
@@ -413,7 +414,7 @@ class SupabaseService {
 
       if (transactionError) throw transactionError
 
-      // Update customer balance and stats
+      // Update customer balance and stats (trigger is now disabled, so we handle it here)
       const customer = await this.getCustomer(transaction.customerId)
       if (customer) {
         let newBalance = customer.balance
@@ -532,7 +533,6 @@ class SupabaseService {
         basePrice: Number.parseFloat(item.base_price) || 0,
         category: item.category,
         isAvailable: item.is_available ?? true,
-        ingredients: item.ingredients || [],
         createdAt: item.created_at,
         updatedAt: item.updated_at || item.created_at,
       }))
@@ -555,7 +555,6 @@ class SupabaseService {
           base_price: item.basePrice,
           category: item.category,
           is_available: item.isAvailable,
-          ingredients: item.ingredients,
         })
         .select()
         .single()
@@ -569,7 +568,6 @@ class SupabaseService {
         basePrice: Number.parseFloat(data.base_price) || 0,
         category: data.category,
         isAvailable: data.is_available ?? true,
-        ingredients: item.ingredients || [],
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at,
       }
@@ -590,7 +588,6 @@ class SupabaseService {
       if (updates.basePrice !== undefined) updateData.base_price = updates.basePrice
       if (updates.category) updateData.category = updates.category
       if (updates.isAvailable !== undefined) updateData.is_available = updates.isAvailable
-      if (updates.ingredients) updateData.ingredients = updates.ingredients
 
       const { data, error } = await supabase.from("menu_items").update(updateData).eq("id", id).select().single()
 
@@ -603,7 +600,6 @@ class SupabaseService {
         basePrice: Number.parseFloat(data.base_price) || 0,
         category: data.category,
         isAvailable: data.is_available ?? true,
-        ingredients: updates.ingredients || [],
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at,
       }
@@ -640,6 +636,8 @@ class SupabaseService {
       return data.map((size: any) => ({
         id: size.id,
         name: size.name,
+        displayName: size.display_name || "",
+        description: size.description || "",
         priceModifier: Number.parseFloat(size.price_modifier) || 0,
         isAvailable: size.is_available ?? true,
         createdAt: size.created_at,
@@ -660,6 +658,8 @@ class SupabaseService {
         .from("menu_sizes")
         .insert({
           name: size.name,
+          display_name: size.displayName,
+          description: size.description,
           price_modifier: size.priceModifier,
           is_available: size.isAvailable,
         })
@@ -671,6 +671,8 @@ class SupabaseService {
       return {
         id: data.id,
         name: data.name,
+        displayName: data.display_name || "",
+        description: data.description || "",
         priceModifier: Number.parseFloat(data.price_modifier) || 0,
         isAvailable: data.is_available ?? true,
         createdAt: data.created_at,
@@ -689,6 +691,8 @@ class SupabaseService {
 
       const updateData: any = { updated_at: new Date().toISOString() }
       if (updates.name) updateData.name = updates.name
+      if (updates.displayName !== undefined) updateData.display_name = updates.displayName
+      if (updates.description !== undefined) updateData.description = updates.description
       if (updates.priceModifier !== undefined) updateData.price_modifier = updates.priceModifier
       if (updates.isAvailable !== undefined) updateData.is_available = updates.isAvailable
 
@@ -699,6 +703,8 @@ class SupabaseService {
       return {
         id: data.id,
         name: data.name,
+        displayName: data.display_name || "",
+        description: data.description || "",
         priceModifier: Number.parseFloat(data.price_modifier) || 0,
         isAvailable: data.is_available ?? true,
         createdAt: data.created_at,
@@ -737,9 +743,9 @@ class SupabaseService {
       return data.map((addon: any) => ({
         id: addon.id,
         name: addon.name,
-        description: addon.description,
-        price: Number.parseFloat(addon.price) || 0,
-        category: addon.category,
+        description: addon.description || "",
+        priceModifier: Number.parseFloat(addon.price_modifier) || 0,
+        category: addon.category || "",
         isAvailable: addon.is_available ?? true,
         createdAt: addon.created_at,
         updatedAt: addon.updated_at || addon.created_at,
@@ -760,7 +766,7 @@ class SupabaseService {
         .insert({
           name: addon.name,
           description: addon.description,
-          price: addon.price,
+          price_modifier: addon.priceModifier,
           category: addon.category,
           is_available: addon.isAvailable,
         })
@@ -772,9 +778,9 @@ class SupabaseService {
       return {
         id: data.id,
         name: data.name,
-        description: data.description,
-        price: Number.parseFloat(data.price) || 0,
-        category: data.category,
+        description: data.description || "",
+        priceModifier: Number.parseFloat(data.price_modifier) || 0,
+        category: data.category || "",
         isAvailable: data.is_available ?? true,
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at,
@@ -792,8 +798,8 @@ class SupabaseService {
 
       const updateData: any = { updated_at: new Date().toISOString() }
       if (updates.name) updateData.name = updates.name
-      if (updates.description) updateData.description = updates.description
-      if (updates.price !== undefined) updateData.price = updates.price
+      if (updates.description !== undefined) updateData.description = updates.description
+      if (updates.priceModifier !== undefined) updateData.price_modifier = updates.priceModifier
       if (updates.category) updateData.category = updates.category
       if (updates.isAvailable !== undefined) updateData.is_available = updates.isAvailable
 
@@ -804,9 +810,9 @@ class SupabaseService {
       return {
         id: data.id,
         name: data.name,
-        description: data.description,
-        price: Number.parseFloat(data.price) || 0,
-        category: data.category,
+        description: data.description || "",
+        priceModifier: Number.parseFloat(data.price_modifier) || 0,
+        category: data.category || "",
         isAvailable: data.is_available ?? true,
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at,

@@ -46,9 +46,10 @@ interface CustomerDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   onCustomerUpdate?: (customer: Customer) => void
+  onTransactionUpdate?: () => void
 }
 
-export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpdate }: CustomerDetailsModalProps) {
+export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpdate, onTransactionUpdate }: CustomerDetailsModalProps) {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -313,18 +314,8 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
     setIsServing(true)
     servingRef.current = true
     
-    // Small delay to prevent double clicks from React strict mode or rapid clicking
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    // Double-check conditions after delay
-    if (!customer || customer.balance < 1) {
-      setIsServing(false)
-      servingRef.current = false
-      return
-    }
-    
     try {
-      // Find the most recent top-up transaction to use its details
+      // Find the most recent top-up transactions to use its details
       const topUpTransactions = transactions.filter((t) => t.type === "topup")
       const latestTopUp = topUpTransactions.length > 0 ? topUpTransactions[0] : null
 
@@ -347,6 +338,12 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
         onCustomerUpdate?.(updatedCustomer)
       }
       await loadTransactions()
+      
+      // Notify parent to refresh recent transactions
+      onTransactionUpdate?.()
+      
+      // Add a brief delay to show the success animation
+      await new Promise(resolve => setTimeout(resolve, 300))
     } catch (error) {
       console.error("Error serving coffee:", error)
     } finally {
@@ -389,6 +386,12 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
         onCustomerUpdate?.(updatedCustomer)
       }
       await loadTransactions()
+      
+      // Notify parent to refresh recent transactions
+      onTransactionUpdate?.()
+      
+      // Add a brief delay to show the success animation
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       // Reset form
       setTopUpForm({
@@ -427,7 +430,7 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
     // Add addon prices
     const addonTotal = topUpForm.addons.reduce((total, addonId) => {
       const addon = menuAddons.find((a) => a.id === addonId)
-      return total + (addon?.price || 0)
+      return total + (addon?.priceModifier || 0)
     }, 0)
 
     const subtotal = (basePrice + addonTotal) * topUpForm.coffeeCount
@@ -703,15 +706,36 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                   <Button
                     onClick={handleServeCoffee}
                     disabled={isServing || customer.balance < 1}
-                    className="w-full h-16 text-lg font-semibold bg-red-600 hover:bg-red-700 text-white"
+                    className={`
+                      w-full h-16 text-lg font-semibold text-white
+                      transition-all duration-300 ease-in-out
+                      transform active:scale-95
+                      ${isServing 
+                        ? "bg-orange-500 hover:bg-orange-600 shadow-lg scale-105" 
+                        : customer.balance < 1 
+                          ? "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" 
+                          : "bg-red-600 hover:bg-red-700 hover:scale-102 hover:shadow-lg"
+                      }
+                    `}
                     size="lg"
                   >
-                    {isServing ? (
-                      <Loader2 className="h-6 w-6 animate-spin mr-3" />
-                    ) : (
-                      <Coffee className="h-6 w-6 mr-3" />
-                    )}
-                    {customer.balance < 1 ? "Insufficient Balance" : "SERVE COFFEE"}
+                    <div className="flex items-center justify-center transition-all duration-200">
+                      {isServing ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin mr-3 text-white" />
+                          <span className="animate-pulse">Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Coffee className={`h-6 w-6 mr-3 transition-transform duration-200 ${
+                            customer.balance < 1 ? "" : "group-hover:rotate-12"
+                          }`} />
+                          <span className="transition-all duration-200">
+                            {customer.balance < 1 ? "Insufficient Balance" : "SERVE COFFEE"}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </Button>
                 </div>
               </CardContent>
@@ -845,11 +869,11 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                             {transaction.notes && (
                               <p className="text-xs text-muted-foreground italic">{transaction.notes}</p>
                             )}
-                            {transaction.discountAmount && transaction.discountAmount > 0 && (
+                            {/* {transaction.discountAmount && transaction.discountAmount > 0 && (
                               <p className="text-xs text-green-600 font-medium">
                                 Discount Applied: -${transaction.discountAmount.toFixed(2)}
                               </p>
-                            )}
+                            )} */}
                           </div>
                         </div>
                         <div className="text-right">
@@ -866,9 +890,9 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                               {transaction.type === "topup" ? "+" : transaction.type === "serve" ? "-" : "+"}
                               {transaction.coffeeCount}
                             </Badge>
-                            {transaction.amount && (
+                            {/* {transaction.amount && (
                               <span className="text-sm font-medium">${transaction.amount.toFixed(2)}</span>
-                            )}
+                            )} */}
                           </div>
                         </div>
                       </div>
@@ -948,7 +972,7 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                               onCheckedChange={() => handleAddonToggle(addon.id)}
                             />
                             <Label htmlFor={`topup-addon-${addon.id}`} className="text-sm cursor-pointer">
-                              {addon.name} (+${addon.price.toFixed(2)})
+                              {addon.name} (+${addon.priceModifier.toFixed(2)})
                             </Label>
                           </div>
                         ))}
@@ -1036,15 +1060,29 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                     <Button
                       onClick={handleTopUp}
                       disabled={isTopUp}
-                      className="w-full bg-transparent"
+                      className={`
+                        w-full transition-all duration-300 ease-in-out
+                        transform active:scale-95
+                        ${isTopUp 
+                          ? "bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105 border-green-500" 
+                          : "bg-transparent hover:bg-green-50 hover:scale-102 hover:shadow-md border-green-300"
+                        }
+                      `}
                       variant="outline"
                     >
-                      {isTopUp ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <CreditCard className="h-4 w-4 mr-2" />
-                      )}
-                      Add {topUpForm.coffeeCount} Coffee{topUpForm.coffeeCount !== 1 ? "s" : ""}
+                      <div className="flex items-center justify-center transition-all duration-200">
+                        {isTopUp ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <span className="animate-pulse">Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:rotate-12" />
+                            <span>Add {topUpForm.coffeeCount} Coffee{topUpForm.coffeeCount !== 1 ? "s" : ""}</span>
+                          </>
+                        )}
+                      </div>
                     </Button>
                   </>
                 )}

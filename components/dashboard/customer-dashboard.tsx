@@ -128,7 +128,7 @@ export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
         <Card className="mb-6 overflow-hidden">
           <CardContent className="p-0">
             {/* Main Coffee Balance Section */}
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6">
+            <div className="bg-gradient-to-br from-gray-500 to-gray-800 text-white p-6">
               <div className="flex items-center justify-between mb-4">
                 <Badge className={`${balanceStatus.color} ${balanceStatus.bg} ${balanceStatus.border} border`}>
                   {balanceStatus.status} Balance

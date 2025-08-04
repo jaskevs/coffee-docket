@@ -6,20 +6,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Loader2 } from "lucide-react"
-import type { SizeFormData, Size } from "@/types/menu"
+import type { MenuSize } from "@/lib/supabase-service"
+
+interface SizeFormData {
+  name: string
+  displayName: string
+  description: string
+  priceModifier: number
+  isActive: boolean
+}
 
 interface SizeFormProps {
-  size?: Size
-  onSubmit: (data: SizeFormData) => Promise<void>
+  size?: MenuSize
+  onSave: (data: MenuSize) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
 }
 
-export function SizeForm({ size, onSubmit, onCancel, isLoading = false }: SizeFormProps) {
-  const [isActive, setIsActive] = useState(size?.isActive ?? true)
+export function SizeForm({ size, onSave, onCancel, isLoading = false }: SizeFormProps) {
+  const [isActive, setIsActive] = useState(size?.isAvailable ?? true)
 
   const {
     register,
@@ -29,28 +36,26 @@ export function SizeForm({ size, onSubmit, onCancel, isLoading = false }: SizeFo
     defaultValues: {
       name: size?.name || "",
       displayName: size?.displayName || "",
+      description: size?.description || "",
       priceModifier: size?.priceModifier || 0,
-      isActive: size?.isActive ?? true,
+      isActive: size?.isAvailable ?? true,
     },
   })
 
   const handleFormSubmit = async (data: SizeFormData) => {
-    await onSubmit({
-      ...data,
-      isActive,
-    })
+    await onSave({
+      ...size,
+      name: data.name,
+      displayName: data.displayName,
+      description: data.description,
+      priceModifier: data.priceModifier,
+      isAvailable: data.isActive,
+    } as MenuSize)
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-gray-800">{size ? "Edit Size" : "Add New Size"}</CardTitle>
-        <CardDescription>
-          {size ? "Update the details of this size option" : "Create a new size option for menu items"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <div className="w-full">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -85,6 +90,19 @@ export function SizeForm({ size, onSubmit, onCancel, isLoading = false }: SizeFo
               />
               {errors.displayName && <p className="text-sm text-red-600">{errors.displayName.message}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+              Description
+            </Label>
+            <Input
+              id="description"
+              {...register("description")}
+              placeholder="e.g., Perfect for a quick morning coffee"
+              className="h-12"
+            />
+            {errors.description && <p className="text-sm text-red-600">{errors.description.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -143,7 +161,6 @@ export function SizeForm({ size, onSubmit, onCancel, isLoading = false }: SizeFo
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   )
 }

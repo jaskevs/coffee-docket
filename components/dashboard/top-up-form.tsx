@@ -93,7 +93,7 @@ export function TopUpForm({ onTopUp, isLoading = false }: TopUpFormProps) {
     // Add addon prices
     const addonTotal = selectedAddons.reduce((total, addonId) => {
       const addon = menuAddons.find((a) => a.id === addonId)
-      return total + (addon?.price || 0)
+      return total + (addon?.priceModifier || 0)
     }, 0)
 
     return (basePrice + addonTotal) * coffeeCount
@@ -145,7 +145,7 @@ export function TopUpForm({ onTopUp, isLoading = false }: TopUpFormProps) {
                 <SelectContent>
                   {menuSizes.map((sizeOption) => (
                     <SelectItem key={sizeOption.id} value={sizeOption.id}>
-                      {sizeOption.name} {sizeOption.priceModifier > 0 && `(+$${sizeOption.priceModifier.toFixed(2)})`}
+                      {sizeOption.displayName || sizeOption.name} {sizeOption.priceModifier > 0 && `(+$${sizeOption.priceModifier.toFixed(2)})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -163,7 +163,7 @@ export function TopUpForm({ onTopUp, isLoading = false }: TopUpFormProps) {
                       onCheckedChange={() => handleAddonToggle(addon.id)}
                     />
                     <Label htmlFor={`addon-${addon.id}`} className="text-sm cursor-pointer">
-                      {addon.name} (+${addon.price.toFixed(2)})
+                      {addon.name} (+${addon.priceModifier.toFixed(2)})
                     </Label>
                   </div>
                 ))}

@@ -56,13 +56,30 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    const date = new Date(dateString)
+    const now = new Date()
+    const isToday = date.toDateString() === now.toDateString()
+    const isThisYear = date.getFullYear() === now.getFullYear()
+    
+    if (isToday) {
+      return date.toLocaleString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    } else if (isThisYear) {
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    } else {
+      return date.toLocaleString("en-US", {
+        year: "2-digit",
+        month: "short",
+        day: "numeric",
+      })
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -160,19 +177,19 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
-            <Calendar className="w-5 h-5 mr-2" />
-            Transaction History
-            <Badge variant="outline" className="ml-2">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <CardTitle className="flex items-center text-lg">
+            <Calendar className="w-5 h-5 mr-2 flex-shrink-0" />
+            <span className="truncate">Transaction History</span>
+            <Badge variant="outline" className="ml-2 flex-shrink-0">
               {filteredTransactions.length}
             </Badge>
           </CardTitle>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <Filter className="w-4 h-4 text-gray-500" />
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-28 sm:w-32 h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -188,76 +205,84 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
       <CardContent>
         {/* Summary Stats */}
         {transactions.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{summary.totalCoffeesAdded}</div>
-              <div className="text-xs text-gray-600">Coffees Added</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{summary.totalCoffeesAdded}</div>
+              <div className="text-xs sm:text-sm text-gray-600 font-medium">Added</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{summary.totalCoffeesServed}</div>
-              <div className="text-xs text-gray-600">Coffees Served</div>
+              <div className="text-xl sm:text-2xl font-bold text-red-600">{summary.totalCoffeesServed}</div>
+              <div className="text-xs sm:text-sm text-gray-600 font-medium">Served</div>
             </div>
-            <div className="text-center">
+            {/* <div className="text-center">
               <div className="text-lg font-bold text-blue-600">{summary.totalCoffeesRefunded}</div>
               <div className="text-xs text-gray-600">Coffees Refunded</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-gray-900">{formatCurrency(summary.totalMoneySpent)}</div>
               <div className="text-xs text-gray-600">Total Spent</div>
-            </div>
+            </div> */}
           </div>
         )}
 
         {/* Transaction List */}
         {filteredTransactions.length > 0 ? (
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-80 sm:max-h-96 overflow-y-auto">
             {filteredTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between p-3 bg-white border rounded-lg hover:bg-gray-50"
+                className="flex items-start sm:items-center justify-between p-3 sm:p-4 bg-white border rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${getTransactionColor(transaction.type)}`}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 ${getTransactionColor(transaction.type)}`}
                   >
                     {getTransactionIcon(transaction.type)}
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
-                    <div className="flex items-center space-x-2 text-xs text-gray-500">
-                      <span>{formatDate(transaction.createdAt)}</span>
-                      {transaction.drinkName && <span>• {transaction.drinkName}</span>}
-                      {transaction.sizeName && <span>• {transaction.sizeName}</span>}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm sm:text-base text-gray-900 truncate">{transaction.description}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 text-xs sm:text-sm text-gray-500 mt-1">
+                      <span className="flex-shrink-0">{formatDate(transaction.createdAt)}</span>
+                      <div className="flex items-center space-x-2 mt-1 sm:mt-0">
+                        {transaction.drinkName && (
+                          <>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">{transaction.drinkName}</span>
+                          </>
+                        )}
+                        {transaction.sizeName && (
+                          <>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="flex-shrink-0">{transaction.sizeName}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex flex-col items-end space-y-1">
-                    <Badge
-                      variant={
-                        transaction.type === "topup"
-                          ? "default"
-                          : transaction.type === "serve"
-                            ? "destructive"
-                            : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {transaction.type === "topup" ? "+" : "-"}
-                      {transaction.coffeeCount} coffee{transaction.coffeeCount !== 1 ? "s" : ""}
-                    </Badge>
-                    {transaction.amount && (
-                      <span className="text-xs text-gray-500">{formatCurrency(transaction.amount)}</span>
-                    )}
-                  </div>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <Badge
+                    variant={
+                      transaction.type === "topup"
+                        ? "default"
+                        : transaction.type === "serve"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                    className="text-xs sm:text-sm font-medium whitespace-nowrap"
+                  >
+                    {transaction.type === "topup" ? "+" : "-"}
+                    {transaction.coffeeCount}
+                    <span className="hidden sm:inline ml-1">coffee{transaction.coffeeCount !== 1 ? "s" : ""}</span>
+                  </Badge>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <Coffee className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-gray-600">
+          <div className="text-center py-6 sm:py-8">
+            <Coffee className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3 opacity-50" />
+            <p className="text-sm sm:text-base text-gray-600">
               {filterType === "all" ? "No transactions yet" : `No ${filterType} transactions found`}
             </p>
           </div>

@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Edit, Trash2, Coffee, DollarSign, ArrowLeft } from "lucide-react"
-import { MenuItemForm } from "./menu-item-form"
-import { SizeForm } from "./size-form"
-import { AddOnForm } from "./add-on-form"
+import { MenuItemModal } from "./menu-item-modal"
+import { SizeModal } from "./size-modal"
+import { AddonModal } from "./addon-modal"
 import { supabaseService, type MenuItem, type MenuSize, type MenuAddon } from "@/lib/supabase-service"
 
 interface MenuManagementProps {
@@ -243,8 +243,9 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold">{size.name}</h3>
+                      <h3 className="font-semibold">{size.displayName || size.name}</h3>
                       <p className="text-sm text-gray-600">+${size.priceModifier.toFixed(2)}</p>
+                      {size.description && <p className="text-xs text-gray-500">{size.description}</p>}
                       <Badge variant={size.isAvailable ? "default" : "secondary"} className="mt-1">
                         {size.isAvailable ? "Available" : "Unavailable"}
                       </Badge>
@@ -287,7 +288,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{addon.name}</h3>
-                      <p className="text-sm text-gray-600">+${addon.price.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">+${addon.priceModifier.toFixed(2)}</p>
                       <Badge variant={addon.isAvailable ? "default" : "secondary"} className="mt-1">
                         {addon.isAvailable ? "Available" : "Unavailable"}
                       </Badge>
@@ -315,39 +316,36 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Forms */}
-      {showItemForm && (
-        <MenuItemForm
-          item={editingItem}
-          onSave={handleSaveItem}
-          onCancel={() => {
-            setShowItemForm(false)
-            setEditingItem(null)
-          }}
-        />
-      )}
+      {/* Modals */}
+      <MenuItemModal
+        isOpen={showItemForm}
+        onClose={() => {
+          setShowItemForm(false)
+          setEditingItem(null)
+        }}
+        item={editingItem}
+        onSave={handleSaveItem}
+      />
 
-      {showSizeForm && (
-        <SizeForm
-          size={editingSize}
-          onSave={handleSaveSize}
-          onCancel={() => {
-            setShowSizeForm(false)
-            setEditingSize(null)
-          }}
-        />
-      )}
+      <SizeModal
+        isOpen={showSizeForm}
+        onClose={() => {
+          setShowSizeForm(false)
+          setEditingSize(null)
+        }}
+        size={editingSize}
+        onSave={handleSaveSize}
+      />
 
-      {showAddonForm && (
-        <AddOnForm
-          addon={editingAddon}
-          onSave={handleSaveAddon}
-          onCancel={() => {
-            setShowAddonForm(false)
-            setEditingAddon(null)
-          }}
-        />
-      )}
+      <AddonModal
+        isOpen={showAddonForm}
+        onClose={() => {
+          setShowAddonForm(false)
+          setEditingAddon(null)
+        }}
+        addon={editingAddon}
+        onSave={handleSaveAddon}
+      />
     </div>
   )
 }

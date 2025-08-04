@@ -103,6 +103,17 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     setIsAddCustomerModalOpen(false)
   }
 
+  const handleTransactionUpdate = async () => {
+    try {
+      // Reload recent transactions only
+      const allTransactions = await supabaseService.getTransactions()
+      const recentTxns = allTransactions.slice(0, 4)
+      setRecentTransactions(recentTxns)
+    } catch (error) {
+      console.error("Error refreshing recent transactions:", error)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -338,7 +349,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                         <div className="flex items-center space-x-2">
                           <span className="text-sm font-medium text-gray-900 truncate">{transaction.customerName}</span>
                           <Badge
-                            variant={transaction.type === "purchase" ? "destructive" : "default"}
+                            variant={transaction.type === "serve" ? "destructive" : "default"}
                             className="text-xs"
                           >
                             {transaction.type}
@@ -348,7 +359,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                           {transaction.description} • {formatDate(transaction.createdAt)}
                         </div>
                       </div>
-                      <div className="text-sm font-medium text-gray-900">{formatCurrency(transaction.amount)}</div>
+                      {/* <div className="text-sm font-medium text-gray-900">{formatCurrency(transaction.amount)}</div> */}
                     </div>
                   ))}
 
@@ -380,6 +391,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onCustomerUpdate={handleCustomerUpdate}
+          onTransactionUpdate={handleTransactionUpdate}
         />
       )}
 
