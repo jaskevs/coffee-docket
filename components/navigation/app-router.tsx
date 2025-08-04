@@ -30,9 +30,9 @@ export function AppRouter() {
   if (!user) {
     switch (currentPage) {
       case "signup":
-        return <SignUpPage onNavigateToLogin={() => handleNavigate("login")} />
+        return <SignUpPage onBack={() => handleNavigate("login")} />
       case "forgot-password":
-        return <ForgotPasswordPage onNavigateToLogin={() => handleNavigate("login")} />
+        return <ForgotPasswordPage onBack={() => handleNavigate("login")} />
       default:
         return (
           <LoginPage

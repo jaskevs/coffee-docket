@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Coffee,
   Loader2,
@@ -69,6 +69,7 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
 
   // Coffee serving state
   const [isServing, setIsServing] = useState(false)
+  const servingRef = useRef(false)
 
   // Top-up state
   const [isTopUp, setIsTopUp] = useState(false)
@@ -307,9 +308,21 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
   }
 
   const handleServeCoffee = async () => {
-    if (!customer || !user || isServing) return
+    if (!customer || !user || isServing || customer.balance < 1 || servingRef.current) return
 
     setIsServing(true)
+    servingRef.current = true
+    
+    // Small delay to prevent double clicks from React strict mode or rapid clicking
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // Double-check conditions after delay
+    if (!customer || customer.balance < 1) {
+      setIsServing(false)
+      servingRef.current = false
+      return
+    }
+    
     try {
       // Find the most recent top-up transaction to use its details
       const topUpTransactions = transactions.filter((t) => t.type === "topup")
@@ -338,6 +351,7 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
       console.error("Error serving coffee:", error)
     } finally {
       setIsServing(false)
+      servingRef.current = false
     }
   }
 

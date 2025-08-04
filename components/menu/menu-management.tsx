@@ -162,7 +162,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
           <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <Coffee className="h-8 w-8 text-blue-500" />
+          <Coffee className="h-8 w-8 text-white" />
         </div>
       </div>
 

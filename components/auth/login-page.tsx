@@ -68,7 +68,7 @@ export function LoginPage({ onNavigateToSignUp, onNavigateToForgotPassword }: Lo
               <Coffee className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">CoffeeTracker</h1>
+              <h1 className="text-3xl font-bold text-gray-800">Coffee Docket</h1>
               <p className="text-sm text-gray-600">Track your perfect brew</p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export function LoginPage({ onNavigateToSignUp, onNavigateToForgotPassword }: Lo
         </Card>
 
         {/* Demo Access Section */}
-        <div className="mt-8 text-center">
+        {/* <div className="mt-8 text-center">
           <p className="text-sm text-gray-600 mb-4">Quick Demo Access:</p>
           <div className="space-x-4">
             <Button
@@ -218,10 +218,10 @@ export function LoginPage({ onNavigateToSignUp, onNavigateToForgotPassword }: Lo
               Demo Customer Access
             </Button>
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">© 2025 CoffeeTracker. Made with ☕ and love.</p>
+          <p className="text-xs text-gray-500">© 2025 CoffeeDocket. Built on caffeine.</p>
         </div>
       </div>
     </div>
