@@ -463,7 +463,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Update the appropriate table based on user role
         const tableName = authState.user.role === "admin" ? "admin_users" : "customers"
 
-        const { error } = await supabaseClient
+        // Update database table first
+        const { error: dbError } = await supabaseClient
           .from(tableName)
           .update({
             first_name: data.firstName,
@@ -472,21 +473,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
           .eq("id", authState.user.id)
 
-        if (!error) {
-          const updatedUser = {
-            ...authState.user,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-          }
-
-          setAuthState((prev) => ({
-            ...prev,
-            user: updatedUser,
-            isLoading: false,
-          }))
-          return true
+        if (dbError) {
+          console.error("Database update error:", dbError)
+          setAuthState((prev) => ({ ...prev, isLoading: false }))
+          return false
         }
+
+        // If email changed, also update Supabase Auth user email
+        if (data.email !== authState.user.email) {
+          try {
+            // Get the admin client to update the auth user
+            const { getSupabaseAdminClient } = await import('../lib/supabase')
+            const adminClient = await getSupabaseAdminClient()
+            
+            if (adminClient) {
+              // First, find the auth user by the current email
+              const { data: authUsers, error: listError } = await adminClient.auth.admin.listUsers()
+              
+              if (!listError && authUsers) {
+                const authUser = authUsers.users.find((user: any) => user.email === authState.user.email)
+                
+                if (authUser) {
+                  // Update the auth user's email
+                  const { error: authError } = await adminClient.auth.admin.updateUserById(
+                    authUser.id,
+                    { email: data.email }
+                  )
+                  
+                  if (authError) {
+                    console.error("Auth email update error:", authError)
+                    // Continue anyway, as the database was updated successfully
+                  } else {
+                    console.log("✅ Auth user email updated successfully")
+                  }
+                } else {
+                  console.log("Auth user not found for email update")
+                }
+              } else {
+                console.error("Error listing auth users:", listError)
+              }
+            } else {
+              console.error("Admin client not available for auth email update")
+            }
+          } catch (authUpdateError) {
+            console.error("Error during auth email update:", authUpdateError)
+            // Continue anyway, as the database was updated successfully
+          }
+        }
+
+        const updatedUser = {
+          ...authState.user,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+        }
+
+        setAuthState((prev) => ({
+          ...prev,
+          user: updatedUser,
+          isLoading: false,
+        }))
+        return true
       }
 
       // Fallback to localStorage update

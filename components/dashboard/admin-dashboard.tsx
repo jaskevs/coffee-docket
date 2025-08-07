@@ -363,10 +363,10 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 <span className="text-sm text-gray-600">Low Balance</span>
                 <span className="text-sm font-medium text-red-600">{stats.lowBalanceCustomers}</span>
               </div>
-              <div className="flex justify-between items-center">
+              {/* <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Revenue Today</span>
                 <span className="text-sm font-medium text-green-600">{formatCurrency(stats.totalRevenue)}</span>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
