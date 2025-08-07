@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 interface DashboardHeaderProps {
   userName: string
-  userEmail: string
+  userEmail: string | null
   onLogout: () => void
   onProfile?: () => void
 }
@@ -55,7 +55,7 @@ export function DashboardHeader({ userName, userEmail, onLogout, onProfile }: Da
             <div className="flex items-center justify-start gap-2 p-2">
               <div className="flex flex-col space-y-1 leading-none">
                 <p className="font-medium text-sm">{userName}</p>
-                <p className="text-xs text-gray-600">{userEmail}</p>
+                <p className="text-xs text-gray-600">{userEmail || "No email set"}</p>
               </div>
             </div>
             <DropdownMenuSeparator />

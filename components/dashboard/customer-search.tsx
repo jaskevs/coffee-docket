@@ -61,9 +61,9 @@ export function CustomerSearch({
       {/* Search Results Info */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="flex items-center text-sm text-gray-600 transition-all duration-200 ease-in-out">
+          <div className="flex items-center text-xs text-gray-600 transition-all duration-200 ease-in-out">
             <Users
-              className={`w-4 h-4 mr-2 transition-colors duration-200 ${
+              className={`w-3 h-3 mr-2 transition-colors duration-200 ${
                 isSearching ? "text-blue-500" : "text-gray-500"
               }`}
             />
@@ -101,7 +101,7 @@ export function CustomerSearch({
             hasQuery ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-75 translate-x-2"
           }`}
         >
-          {hasQuery && (
+          {/* {hasQuery && (
             <Button
               variant="outline"
               size="sm"
@@ -110,7 +110,7 @@ export function CustomerSearch({
             >
               Clear search
             </Button>
-          )}
+          )} */}
         </div>
       </div>
     </div>

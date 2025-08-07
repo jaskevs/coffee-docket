@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
   const [supabaseClient, setSupabaseClient] = useState<any>(null)
 
-  // Helper function to get user profile from both tables
+  // Helper function to get user profile from both tables by email
   const getUserProfile = async (client: any, email: string): Promise<User | null> => {
     try {
       // First check admin_users table
@@ -89,6 +89,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Helper function to get user profile by Supabase user ID for email-optional customers
+  const getUserProfileById = async (client: any, supabaseUserId: string): Promise<User | null> => {
+    try {
+      // First check admin_users table by supabase_user_id
+      const { data: adminData, error: adminError } = await client
+        .from("admin_users")
+        .select("*")
+        .eq("supabase_user_id", supabaseUserId)
+        .single()
+
+      if (adminData && !adminError) {
+        console.log("✅ Found admin user by supabase ID:", adminData)
+        return {
+          id: adminData.id,
+          firstName: adminData.first_name,
+          lastName: adminData.last_name,
+          email: adminData.email,
+          role: "admin",
+        }
+      }
+
+      // If not admin, check customers table by supabase_user_id
+      const { data: customerData, error: customerError } = await client
+        .from("customers")
+        .select("*")
+        .eq("supabase_user_id", supabaseUserId)
+        .single()
+
+      if (customerData && !customerError) {
+        console.log("✅ Found customer user by supabase ID:", customerData)
+        return {
+          id: customerData.id,
+          firstName: customerData.first_name,
+          lastName: customerData.last_name,
+          email: customerData.email,
+          role: "customer",
+        }
+      }
+
+      console.log("❌ User not found by supabase ID in either table")
+      return null
+    } catch (error) {
+      console.error("Error getting user profile by ID:", error)
+      return null
+    }
+  }
+
   useEffect(() => {
     const initSupabase = async () => {
       try {
@@ -126,7 +173,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (data.session?.user) {
               // Get user profile from both admin_users and customers tables
-              const userProfile = await getUserProfile(client, data.session.user.email!)
+              // Handle email-optional customers (admin-created without email)
+              const userEmail = data.session.user.email
+              const supabaseUserId = data.session.user.id
+              
+              let userProfile = null
+              
+              if (userEmail) {
+                // Try lookup by email first
+                userProfile = await getUserProfile(client, userEmail)
+              }
+              
+              if (!userProfile && supabaseUserId) {
+                // If no profile found by email, try lookup by Supabase user ID
+                userProfile = await getUserProfileById(client, supabaseUserId)
+              }
 
               if (userProfile) {
                 setAuthState({
@@ -136,6 +197,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 })
                 console.log(`✅ User logged in as ${userProfile.role}:`, userProfile)
                 return
+              } else {
+                console.log("❌ User profile not found in database")
               }
             }
           }
@@ -146,7 +209,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (event === "SIGNED_IN" && session?.user) {
               // Get user profile from both tables
-              const userProfile = await getUserProfile(client, session.user.email!)
+              // Handle email-optional customers safely
+              const userEmail = session.user.email
+              const supabaseUserId = session.user.id
+              
+              let userProfile = null
+              
+              if (userEmail) {
+                // Try lookup by email first
+                userProfile = await getUserProfile(client, userEmail)
+              }
+              
+              if (!userProfile && supabaseUserId) {
+                // If no profile found by email, try lookup by Supabase user ID
+                userProfile = await getUserProfileById(client, supabaseUserId)
+              }
 
               if (userProfile) {
                 setAuthState({
@@ -156,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 })
                 console.log(`✅ User signed in as ${userProfile.role}:`, userProfile)
               } else {
-                console.log("❌ User profile not found after sign in")
+                console.log("❌ User profile not found in database")
                 setAuthState({
                   user: null,
                   isAuthenticated: false,
@@ -393,7 +470,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             last_name: data.lastName,
             email: data.email,
           })
-          .eq("email", authState.user.email)
+          .eq("id", authState.user.id)
 
         if (!error) {
           const updatedUser = {

@@ -104,7 +104,7 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="h-12 text-base pr-12 border-gray-300 focus:border-gray-400 focus:ring-gray-400"
+                  className="h-12 text-base pr-12  "
                   {...register("password", {
                     required: "Password is required",
                     minLength: {

@@ -20,7 +20,7 @@ export function AddonModal({ isOpen, onClose, addon, onSave, isLoading = false }
           <DialogTitle>{addon ? "Edit Add-on" : "Add New Add-on"}</DialogTitle>
         </DialogHeader>
         <AddOnForm
-          addon={addon}
+          addon={addon || undefined}
           onSave={onSave}
           onCancel={onClose}
           isLoading={isLoading}

@@ -16,6 +16,7 @@ export const mockMenuItems: MenuItem[] = [
     basePrice: 2.5,
     isAvailable: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "2",
@@ -25,6 +26,7 @@ export const mockMenuItems: MenuItem[] = [
     basePrice: 4.0,
     isAvailable: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "3",
@@ -34,6 +36,7 @@ export const mockMenuItems: MenuItem[] = [
     basePrice: 4.5,
     isAvailable: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "4",
@@ -43,15 +46,17 @@ export const mockMenuItems: MenuItem[] = [
     basePrice: 3.0,
     isAvailable: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "5",
     name: "Croissant",
     description: "Buttery, flaky pastry",
-    category: "pastries",
+    category: "pastry",
     basePrice: 3.5,
     isAvailable: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ]
 
@@ -59,20 +64,29 @@ export const mockSizes: MenuSize[] = [
   {
     id: "1",
     name: "Small",
+    displayName: "Small",
     priceModifier: 0,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "2",
     name: "Medium",
+    displayName: "Medium",
     priceModifier: 0.5,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "3",
     name: "Large",
+    displayName: "Large",
     priceModifier: 1.0,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ]
 
@@ -80,25 +94,33 @@ export const mockAddons: MenuAddon[] = [
   {
     id: "1",
     name: "Extra Shot",
-    price: 0.75,
+    priceModifier: 0.75,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "2",
     name: "Oat Milk",
-    price: 0.5,
+    priceModifier: 0.5,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "3",
     name: "Vanilla Syrup",
-    price: 0.5,
+    priceModifier: 0.5,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "4",
     name: "Whipped Cream",
-    price: 0.5,
+    priceModifier: 0.5,
     isAvailable: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ]

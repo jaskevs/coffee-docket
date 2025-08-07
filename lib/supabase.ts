@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 
 let supabaseClient: any = null
+let supabaseAdminClient: any = null
 
 export async function getSupabaseClient() {
   if (supabaseClient) {
@@ -11,12 +12,8 @@ export async function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    console.log("🔧 Initializing Supabase client...")
-    console.log("URL:", supabaseUrl ? "✓ Set" : "✗ Missing")
-    console.log("Key:", supabaseKey ? "✓ Set" : "✗ Missing")
-
     if (!supabaseUrl || !supabaseKey) {
-      console.error("❌ Supabase environment variables not configured")
+      console.error("Supabase environment variables not configured")
       return null
     }
 
@@ -26,11 +23,36 @@ export async function getSupabaseClient() {
         autoRefreshToken: true,
       },
     })
-
-    console.log("✅ Supabase client initialized successfully")
     return supabaseClient
   } catch (error) {
-    console.error("❌ Failed to initialize Supabase client:", error)
+    console.error("Failed to initialize Supabase client:", error)
+    return null
+  }
+}
+
+export async function getSupabaseAdminClient() {
+  if (supabaseAdminClient) {
+    return supabaseAdminClient
+  }
+
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase admin environment variables not configured")
+      return null
+    }
+
+    supabaseAdminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+    return supabaseAdminClient
+  } catch (error) {
+    console.error("Failed to initialize Supabase admin client:", error)
     return null
   }
 }
@@ -41,7 +63,7 @@ function createSupabaseClient() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error("❌ Supabase environment variables not configured")
+    console.error("Supabase environment variables not configured")
     return null
   }
 

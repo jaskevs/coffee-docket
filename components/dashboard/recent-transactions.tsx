@@ -3,10 +3,11 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useSupabaseClient } from "@supabase/auth-helpers-react"
+import { Transaction } from "@/types/auth"
 
 const RecentTransactions: React.FC = () => {
   const supabase = useSupabaseClient()
-  const [transactions, setTransactions] = useState([])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
   useEffect(() => {
     const fetchTransactions = async () => {

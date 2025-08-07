@@ -53,7 +53,7 @@ export function AppRouter() {
           switch (currentPage) {
             case "customer-dashboard":
               return user.role === "customer" ? (
-                <CustomerDashboard userEmail={user.email} />
+                <CustomerDashboard userId={user.id} userEmail={user.email} />
               ) : (
                 <AdminDashboard onNavigate={handleNavigate} />
               )
@@ -62,7 +62,7 @@ export function AppRouter() {
               return user.role === "admin" ? (
                 <AdminDashboard onNavigate={handleNavigate} />
               ) : (
-                <CustomerDashboard userEmail={user.email} />
+                <CustomerDashboard userId={user.id} userEmail={user.email} />
               )
 
             case "admin-transactions":
@@ -102,7 +102,7 @@ export function AppRouter() {
               return user.role === "admin" ? (
                 <AdminDashboard onNavigate={handleNavigate} />
               ) : (
-                <CustomerDashboard userEmail={user.email} />
+                <CustomerDashboard userId={user.id} userEmail={user.email} />
               )
           }
         })()}

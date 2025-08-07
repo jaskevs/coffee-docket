@@ -60,8 +60,8 @@ export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustom
       await supabaseService.createCustomer({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        email: formData.email.trim() || null,
-        phone: formData.phone.trim() || null,
+        email: formData.email.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
         balance: 0,
         status: "active",
       })

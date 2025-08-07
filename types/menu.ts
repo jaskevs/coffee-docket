@@ -1,29 +1,34 @@
 export interface MenuItem {
   id: string
   name: string
-  description: string
+  description?: string
   basePrice: number
-  category: "coffee" | "tea" | "cold" | "pastry"
-  isActive: boolean
-  image?: string
-  ingredients?: string[]
+  category: "coffee" | "tea" | "cold" | "specialty" | "pastry"
+  isAvailable: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Size {
   id: string
   name: string
-  displayName: string
+  displayName?: string
   priceModifier: number
-  isActive: boolean
+  description?: string
+  isAvailable: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface AddOn {
   id: string
   name: string
-  description: string
+  description?: string
   priceModifier: number
-  category: "milk" | "syrup" | "extra" | "dietary"
-  isActive: boolean
+  category?: string
+  isAvailable: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface MenuCategory {
@@ -57,3 +62,6 @@ export interface AddOnFormData {
   category: string
   isActive: boolean
 }
+
+export type MenuSize = Size
+export type MenuAddon = AddOn

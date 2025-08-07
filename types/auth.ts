@@ -2,7 +2,7 @@ export interface User {
   id: string
   firstName: string
   lastName: string
-  email: string
+  email: string | null
   role: "admin" | "customer"
 }
 
@@ -60,22 +60,42 @@ export interface Customer {
   id: string
   firstName: string
   lastName: string
-  email: string
+  email?: string
   phone?: string
   balance: number
   totalSpent: number
-  lastVisit: string
+  visitCount: number
+  lastVisit?: string
   status: "active" | "inactive"
+  notificationLowBalance: boolean
+  notificationTopup: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export interface Transaction {
   id: string
-  customerId: string
-  customerName: string
-  type: "topup" | "served"
+  customerId?: string
+  adminId?: string
+  type: "topup" | "serve" | "refund"
+  coffeeCount: number
   amount?: number
-  coffeeType?: string
-  balanceAfter: number
-  timestamp: string
+  drinkName?: string
+  sizeName?: string
+  addons?: string[]
+  discountAmount?: number
+  notes?: string
+  description?: string
+  createdAt: string
+}
+
+export type AuthMode = "login" | "signup" | "forgot-password" | "reset-password"
+
+export type SignUpFormData = SignupFormData
+
+export interface CoffeeSize {
+  id: string
+  name: string
+  price: number
+  multiplier: number
 }

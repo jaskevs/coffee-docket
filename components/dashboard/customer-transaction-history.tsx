@@ -35,12 +35,10 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
     setError(null)
 
     try {
-      console.log("🔄 Loading transactions for customer:", customerId)
       const data = await supabaseService.getCustomerTransactions(customerId)
-      console.log("✅ Loaded transactions:", data)
       setTransactions(data)
     } catch (err) {
-      console.error("❌ Error loading transactions:", err)
+      console.error("Error loading transactions:", err)
       setError("Failed to load transaction history")
     } finally {
       setIsLoading(false)
@@ -186,10 +184,10 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
               {filteredTransactions.length}
             </Badge>
           </CardTitle>
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <Filter className="w-4 h-4 text-gray-500" />
+          <div className="flex items-center space-x-2 sm:w-auto w-full">
+            <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-28 sm:w-32 h-9">
+              <SelectTrigger className="w-full sm:w-32 h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

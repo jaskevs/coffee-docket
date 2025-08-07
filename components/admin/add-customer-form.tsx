@@ -62,6 +62,9 @@ export function AddCustomerForm({ onNavigate }: AddCustomerFormProps) {
         balance: 0,
         totalSpent: 0,
         visitCount: 0,
+        status: "active",
+        notificationLowBalance: true,
+        notificationTopup: true,
       })
 
       // Show success message

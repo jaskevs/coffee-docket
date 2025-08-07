@@ -65,10 +65,15 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   // Load customer data on component mount (only for customers)
   React.useEffect(() => {
     const loadCustomerData = async () => {
-      if (user?.email && user?.role !== "admin") {
+      if (user && user.role !== "admin") {
         setCustomerLoading(true)
         try {
-          const customerData = await supabaseService.getCustomerByEmail(user.email)
+          // Try to get customer by ID first, then by email if available
+          let customerData = await supabaseService.getCustomerById(user.id)
+          
+          if (!customerData && user.email) {
+            customerData = await supabaseService.getCustomerByEmail(user.email)
+          }
           if (customerData) {
             setCustomer(customerData)
             setProfileForm({
@@ -300,7 +305,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
               last_name: profileForm.lastName,
               email: profileForm.email,
             })
-            .eq("email", user.email)
+            .eq("id", user.id)
 
           if (error) {
             throw error
@@ -389,7 +394,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span>Profile Information</span>
+                <span>Profile</span>
               </CardTitle>
               <div className="flex items-center space-x-2">
                 <Badge variant="default">Admin</Badge>
@@ -608,7 +613,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center space-x-2">
               <User className="h-4 w-4" />
-              <span>Profile Information</span>
+              <span>Profile</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center space-x-2">
               <Bell className="h-4 w-4" />
@@ -639,7 +644,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <User className="h-5 w-5" />
-                  <span>Profile Information</span>
+                  <span>Profile</span>
                 </CardTitle>
                 <CardDescription>Update your personal information</CardDescription>
               </CardHeader>

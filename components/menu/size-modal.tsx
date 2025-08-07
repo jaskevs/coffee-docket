@@ -20,7 +20,7 @@ export function SizeModal({ isOpen, onClose, size, onSave, isLoading = false }: 
           <DialogTitle>{size ? "Edit Size" : "Add New Size"}</DialogTitle>
         </DialogHeader>
         <SizeForm
-          size={size}
+          size={size || undefined}
           onSave={onSave}
           onCancel={onClose}
           isLoading={isLoading}

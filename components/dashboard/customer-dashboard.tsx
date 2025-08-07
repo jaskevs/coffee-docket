@@ -11,10 +11,11 @@ import { supabaseService } from "@/lib/supabase-service"
 import type { Customer } from "@/lib/supabase-service"
 
 interface CustomerDashboardProps {
-  userEmail: string
+  userId: string
+  userEmail: string | null
 }
 
-export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
+export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,30 +23,32 @@ export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
 
   useEffect(() => {
     loadCustomerData()
-  }, [userEmail])
+  }, [userId, userEmail])
 
   const loadCustomerData = async () => {
-    if (!userEmail) {
-      setError("No user email provided")
+    if (!userId) {
+      setError("No user ID provided")
       setIsLoading(false)
       return
     }
 
     try {
-      console.log("🔄 Loading customer data for email:", userEmail)
       setError(null)
-
-      const customerData = await supabaseService.getCustomerByEmail(userEmail)
+      
+      // Try to get customer by ID first, then by email if available
+      let customerData = await supabaseService.getCustomerById(userId)
+      
+      if (!customerData && userEmail) {
+        customerData = await supabaseService.getCustomerByEmail(userEmail)
+      }
 
       if (customerData) {
-        console.log("✅ Customer data loaded:", customerData)
         setCustomer(customerData)
       } else {
-        console.log("❌ No customer found for email:", userEmail)
         setError("Customer profile not found. Please contact support.")
       }
     } catch (err) {
-      console.error("❌ Error loading customer data:", err)
+      console.error("Error loading customer data:", err)
       setError("Failed to load customer data. Please try again.")
     } finally {
       setIsLoading(false)
@@ -66,11 +69,13 @@ export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your coffee dashboard...</p>
-          <p className="text-sm text-gray-500 mt-1">Email: {userEmail}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-900 font-medium">Loading dashboard...</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {userEmail ? `${userEmail}` : 'Loading profile...'}
+          </p>
         </div>
       </div>
     )
@@ -79,16 +84,26 @@ export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
   if (error || !customer) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <Alert variant="destructive" className="mb-4">
+        <div className="max-w-md w-full bg-white rounded-lg p-6 border border-gray-200">
+          <div className="text-center mb-6">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold text-gray-900">Something went wrong</h2>
+          </div>
+          
+          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error || "Customer data not available"}</AlertDescription>
           </Alert>
+          
           <div className="text-center">
-            <p className="text-sm text-gray-600 mb-4">
-              Searching for: <strong>{userEmail}</strong>
+            <p className="text-sm text-gray-600 mb-6">
+              Looking for: <strong>{userEmail || `User ID: ${userId}`}</strong>
             </p>
-            <Button onClick={handleRefresh} disabled={isRefreshing} className="w-full">
+            <Button 
+              onClick={handleRefresh} 
+              disabled={isRefreshing} 
+              className="w-full"
+            >
               {isRefreshing ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -115,92 +130,91 @@ export function CustomerDashboard({ userEmail }: CustomerDashboardProps) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {customer.firstName}!</h1>
-            <p className="text-gray-600 mt-1">Manage your coffee balance and view your activity</p>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+              Welcome back, {customer.firstName}
+            </h1>
+            <p className="text-gray-600 text-sm sm:text-base mt-1">Manage your coffee balance</p>
           </div>
-          <Button onClick={handleRefresh} disabled={isRefreshing} variant="outline" size="sm">
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          <Button 
+            onClick={handleRefresh} 
+            disabled={isRefreshing} 
+            variant="ghost" 
+            size="sm"
+            className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-auto"
+          >
+            <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
 
-        {/* Combined Coffee Balance & Info Card */}
-        <Card className="mb-6 overflow-hidden">
-          <CardContent className="p-0">
-            {/* Main Coffee Balance Section */}
-            <div className="bg-gradient-to-br from-gray-500 to-gray-800 text-white p-6">
-              <div className="flex items-center justify-between mb-4">
-                <Badge className={`${balanceStatus.color} ${balanceStatus.bg} ${balanceStatus.border} border`}>
-                  {balanceStatus.status} Balance
-                </Badge>
-                <div className="bg-white/20 p-2 rounded-full">
-                  <Coffee className="w-6 h-6" />
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="text-5xl sm:text-6xl font-bold mb-2 tabular-nums">{customer.balance}</div>
-                <p className="text-blue-100 text-lg font-medium">Coffee{customer.balance !== 1 ? "s" : ""} Available</p>
-              </div>
-
-              {customer.balance <= 3 && customer.balance > 0 && (
-                <div className="mt-4 p-3 bg-amber-500/20 rounded-lg border border-amber-400/30">
-                  <p className="text-sm text-center text-amber-100">⚠️ Low balance! Consider asking staff to top up.</p>
-                </div>
-              )}
-
-              {customer.balance === 0 && (
-                <div className="mt-4 p-3 bg-red-500/20 rounded-lg border border-red-400/30">
-                  <p className="text-sm text-center text-red-100">
-                    ☕ Your balance is empty. Please ask staff to add credits.
-                  </p>
-                </div>
-              )}
+        {/* Coffee Balance Card */}
+        <Card className="mb-6 overflow-hidden relative bg-gradient-to-br from-white via-slate-50/30 to-blue-50/40">
+          <div className="absolute inset-0 opacity-50">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-slate-50/20 animate-pulse" style={{animationDuration: '4s', animationTimingFunction: 'ease-in-out'}}></div>
+            <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-slate-100/10 to-transparent animate-pulse" style={{animationDuration: '6s', animationTimingFunction: 'ease-in-out', animationDelay: '1s'}}></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-50/15 to-transparent animate-pulse" style={{animationDuration: '8s', animationTimingFunction: 'ease-in-out', animationDelay: '2s'}}></div>
+          </div>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-blue-100/8 via-slate-50/4 to-transparent rounded-full transform translate-x-24 -translate-y-24 animate-pulse" style={{animationDuration: '10s', animationTimingFunction: 'ease-in-out'}}></div>
+          <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-tr from-slate-100/6 via-blue-50/3 to-transparent rounded-full transform -translate-x-18 translate-y-18 animate-pulse" style={{animationDuration: '12s', animationTimingFunction: 'ease-in-out', animationDelay: '3s'}}></div>
+          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-gradient-to-r from-transparent via-slate-50/8 to-transparent rounded-full transform -translate-x-12 -translate-y-12 animate-pulse" style={{animationDuration: '14s', animationTimingFunction: 'ease-in-out', animationDelay: '5s'}}></div>
+          <CardContent className="p-6 text-center relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <Badge className={`${balanceStatus.color} ${balanceStatus.bg} ${balanceStatus.border} border shadow-sm`}>
+                {balanceStatus.status}
+              </Badge>
+              <Coffee className="w-5 h-5 text-gray-400" />
             </div>
 
-            {/* Additional Info Section */}
-            <div className="bg-white p-4 border-t">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="flex flex-col items-center">
-                  <User className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-lg font-semibold text-gray-900">{customer.visitCount || 0}</div>
-                  <div className="text-xs text-gray-600">Total Visits</div>
-                  {customer.lastVisit && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      Last: {new Date(customer.lastVisit).toLocaleDateString()}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-center">
-                  <Calendar className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-lg font-semibold text-gray-900">
-                    {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "N/A"}
+            <div className="text-5xl sm:text-6xl font-bold text-gray-900 mb-2 tabular-nums">
+              {customer.balance}
+            </div>
+            <p className="text-gray-600 text-lg mb-4">
+              Coffee{customer.balance !== 1 ? "s" : ""} Available
+            </p>
+
+            {customer.balance <= 3 && customer.balance > 0 && (
+              <div className="mt-4 p-3 bg-amber-50/90 backdrop-blur-sm rounded-xl border border-amber-200/60 shadow-sm">
+                <p className="text-sm text-amber-800">
+                  Low balance. Consider asking staff to top up.
+                </p>
+              </div>
+            )}
+
+            {customer.balance === 0 && (
+              <div className="mt-4 p-3 bg-red-50/90 backdrop-blur-sm rounded-xl border border-red-200/60 shadow-sm">
+                <p className="text-sm text-red-800">
+                  Balance empty. Please ask staff to add credits.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Stats Card */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 gap-6 text-center">
+              <div>
+                <User className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                <div className="text-lg font-semibold text-gray-900">{customer.visitCount || 0}</div>
+                <div className="text-xs text-gray-600">Total Visits</div>
+                {customer.lastVisit && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Last: {new Date(customer.lastVisit).toLocaleDateString()}
                   </div>
-                  <div className="text-xs text-gray-600">Member Since</div>
+                )}
+              </div>
+              <div>
+                <Calendar className="w-5 h-5 text-gray-400 mx-auto mb-2" />
+                <div className="text-lg font-semibold text-gray-900">
+                  {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "N/A"}
                 </div>
+                <div className="text-xs text-gray-600">Member Since</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Low Balance Alert */}
-        {customer.balance <= 3 && customer.balance > 0 && (
-          <Alert className="mb-6 border-amber-200 bg-amber-50">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800">
-              Your coffee balance is running low. Consider asking staff to top up your account.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {customer.balance === 0 && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Your coffee balance is empty. Please ask staff to add credits to your account.
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Transaction History */}
         <CustomerTransactionHistory customerId={customer.id} />

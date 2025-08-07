@@ -1,26 +1,19 @@
 "use client"
 
-import { Switch } from "@/components/ui/switch"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
-
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   Coffee,
   Loader2,
-  Save,
   X,
   CreditCard,
   History,
   User,
   Phone,
-  Mail,
   Calendar,
   TrendingUp,
   Edit3,
   Percent,
   UserPlus,
-  AlertCircle,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -30,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import {
   supabaseService,
   type Customer,
@@ -47,99 +41,55 @@ interface CustomerDetailsModalProps {
   onClose: () => void
   onCustomerUpdate?: (customer: Customer) => void
   onTransactionUpdate?: () => void
+  onEdit?: (customer: Customer) => void
 }
 
-export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpdate, onTransactionUpdate }: CustomerDetailsModalProps) {
+export function CustomerDetailsModal({ 
+  customer, 
+  isOpen, 
+  onClose, 
+  onCustomerUpdate, 
+  onTransactionUpdate, 
+  onEdit 
+}: CustomerDetailsModalProps) {
   const { user } = useAuth()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isSendingAuth, setIsSendingAuth] = useState(false)
-  const [authEmailSent, setAuthEmailSent] = useState(false)
-  const [authError, setAuthError] = useState<string>("")
-  const [editForm, setEditForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    status: "active" as "active" | "inactive",
-    notificationLowBalance: true,
-    notificationTopup: true,
-  })
 
   // Coffee serving state
   const [isServing, setIsServing] = useState(false)
   const servingRef = useRef(false)
 
   // Top-up state
-  const [isTopUp, setIsTopUp] = useState(false)
   const [topUpForm, setTopUpForm] = useState({
     coffeeCount: 1,
-    notes: "",
-    drinkName: "",
-    sizeName: "",
-    addons: [] as string[],
-    discountAmount: 0,
+    discount: 0,
+    notes: ""
   })
+  const [isProcessingTopUp, setIsProcessingTopUp] = useState(false)
+  
 
-  // Menu data from Supabase
+  // Coffee serving state
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null)
+  const [selectedSize, setSelectedSize] = useState<MenuSize | null>(null)
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [menuSizes, setMenuSizes] = useState<MenuSize[]>([])
   const [menuAddons, setMenuAddons] = useState<MenuAddon[]>([])
-  const [isMenuLoading, setIsMenuLoading] = useState(true)
 
   useEffect(() => {
     if (customer && isOpen) {
-      setEditForm({
-        firstName: customer.firstName || "",
-        lastName: customer.lastName || "",
-        email: customer.email || "",
-        phone: customer.phone || "",
-        status: customer.status,
-        notificationLowBalance: customer.notificationLowBalance,
-        notificationTopup: customer.notificationTopup,
-      })
       loadTransactions()
       loadMenuData()
-      setAuthEmailSent(false)
-      setAuthError("")
     }
   }, [customer, isOpen])
-
-  const loadMenuData = async () => {
-    setIsMenuLoading(true)
-    try {
-      const [items, sizes, addons] = await Promise.all([
-        supabaseService.getMenuItems(),
-        supabaseService.getMenuSizes(),
-        supabaseService.getMenuAddons(),
-      ])
-
-      setMenuItems(items.filter((item) => item.isAvailable))
-      setMenuSizes(sizes.filter((size) => size.isAvailable))
-      setMenuAddons(addons.filter((addon) => addon.isAvailable))
-
-      // Set defaults if available
-      if (items.length > 0) {
-        setTopUpForm((prev) => ({ ...prev, drinkName: items[0].id }))
-      }
-      if (sizes.length > 0) {
-        setTopUpForm((prev) => ({ ...prev, sizeName: sizes[0].id }))
-      }
-    } catch (error) {
-      console.error("Error loading menu data:", error)
-    } finally {
-      setIsMenuLoading(false)
-    }
-  }
 
   const loadTransactions = async () => {
     if (!customer) return
 
     setIsLoading(true)
     try {
-      const customerTransactions = await supabaseService.getCustomerTransactions(customer.id)
+      const customerTransactions = await supabaseService.getTransactions(customer.id)
       setTransactions(customerTransactions)
     } catch (error) {
       console.error("Error loading transactions:", error)
@@ -148,202 +98,67 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
     }
   }
 
-  const handleSaveEdit = async () => {
-    if (!customer) return
-
-    setIsSaving(true)
+  const loadMenuData = async () => {
     try {
-      const updatedCustomer = await supabaseService.updateCustomer(customer.id, {
-        firstName: editForm.firstName,
-        lastName: editForm.lastName,
-        email: editForm.email,
-        phone: editForm.phone || undefined,
-        status: editForm.status,
-        notificationLowBalance: editForm.notificationLowBalance,
-        notificationTopup: editForm.notificationTopup,
-      })
-
-      onCustomerUpdate?.(updatedCustomer)
-      setIsEditing(false)
+      const [items, sizes, addons] = await Promise.all([
+        supabaseService.getMenuItems(),
+        supabaseService.getMenuSizes(),
+        supabaseService.getMenuAddons(),
+      ])
+      setMenuItems(items)
+      setMenuSizes(sizes)
+      setMenuAddons(addons)
     } catch (error) {
-      console.error("Error updating customer:", error)
-    } finally {
-      setIsSaving(false)
+      console.error("Error loading menu data:", error)
     }
   }
 
-  const handleCancelEdit = () => {
-    if (customer) {
-      setEditForm({
-        firstName: customer.firstName || "",
-        lastName: customer.lastName || "",
-        email: customer.email || "",
-        phone: customer.phone || "",
-        status: customer.status,
-        notificationLowBalance: customer.notificationLowBalance,
-        notificationTopup: customer.notificationTopup,
-      })
-    }
-    setIsEditing(false)
-    setAuthEmailSent(false)
-    setAuthError("")
-  }
+  const calculateOrderTotal = () => {
+    if (!selectedMenuItem || !selectedSize) return 0
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    if (!customer) return false
+    let total = selectedMenuItem.basePrice + selectedSize.priceModifier
+    
+    selectedAddons.forEach(addonId => {
+      const addon = menuAddons.find(a => a.id === addonId)
+      if (addon) total += addon.priceModifier
+    })
 
-    try {
-      // Search for customers with this email, excluding the current customer
-      const customers = await supabaseService.searchCustomers(email)
-      return customers.some((c) => c.email === email && c.id !== customer.id)
-    } catch (error) {
-      console.error("Error checking email existence:", error)
-      return false
-    }
-  }
-
-  const handleSendAuthEmail = async () => {
-    if (!editForm.email || !customer) return
-
-    setIsSendingAuth(true)
-    setAuthError("")
-
-    try {
-      // First, check if email already exists in customers table (excluding current customer)
-      if (editForm.email !== customer.email) {
-        const emailExists = await checkEmailExists(editForm.email)
-        if (emailExists) {
-          setAuthError("This email is already associated with another customer. Please use a different email address.")
-          setIsSendingAuth(false)
-          return
-        }
-
-        // Update the customer with the new email
-        await supabaseService.updateCustomer(customer.id, {
-          email: editForm.email,
-        })
-
-        // Update the customer object for the parent component
-        const updatedCustomer = { ...customer, email: editForm.email }
-        onCustomerUpdate?.(updatedCustomer)
-      }
-
-      // Use the auth context to create the account
-      const { createClient } = await import("@supabase/supabase-js")
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey)
-
-        // Check if user already exists in auth
-        const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
-
-        if (listError) {
-          console.error("Error checking existing users:", listError)
-          // If we can't check, proceed with signup attempt
-        }
-
-        const existingUser = existingUsers?.users?.find((user) => user.email === editForm.email)
-
-        if (existingUser) {
-          // User already exists, just send password reset email
-          console.log("User already exists, sending password reset email")
-
-          const { error: resetError } = await supabase.auth.resetPasswordForEmail(editForm.email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-          })
-
-          if (resetError) {
-            console.error("Password reset email error:", resetError)
-            throw resetError
-          }
-        } else {
-          // Create new user
-          const tempPassword = Math.random().toString(36).slice(-12) + "A1!"
-
-          const { data, error } = await supabase.auth.signUp({
-            email: editForm.email,
-            password: tempPassword,
-            options: {
-              data: {
-                first_name: editForm.firstName,
-                last_name: editForm.lastName,
-              },
-            },
-          })
-
-          if (error) {
-            console.error("Auth creation error:", error)
-            throw error
-          }
-
-          // Send password reset email so user can set their own password
-          const { error: resetError } = await supabase.auth.resetPasswordForEmail(editForm.email, {
-            redirectTo: `${window.location.origin}/reset-password`,
-          })
-
-          if (resetError) {
-            console.error("Password reset email error:", resetError)
-            throw resetError
-          }
-        }
-
-        setAuthEmailSent(true)
-        console.log("✅ Authentication setup email sent to:", editForm.email)
-      }
-    } catch (error) {
-      console.error("Error setting up authentication:", error)
-
-      // Handle specific error cases
-      if (error.message?.includes("duplicate key")) {
-        setAuthError("This email is already associated with another customer. Please use a different email address.")
-      } else if (error.message?.includes("Invalid email")) {
-        setAuthError("Please enter a valid email address.")
-      } else {
-        setAuthError("Failed to setup authentication. Please try again or contact support.")
-      }
-    } finally {
-      setIsSendingAuth(false)
-    }
+    return total
   }
 
   const handleServeCoffee = async () => {
-    if (!customer || !user || isServing || customer.balance < 1 || servingRef.current) return
+    if (!customer || servingRef.current || customer.balance < 1) return
 
-    setIsServing(true)
     servingRef.current = true
+    setIsServing(true)
     
     try {
-      // Find the most recent top-up transactions to use its details
-      const topUpTransactions = transactions.filter((t) => t.type === "topup")
-      const latestTopUp = topUpTransactions.length > 0 ? topUpTransactions[0] : null
-
+      // Create transaction record for serving 1 coffee
       await supabaseService.createTransaction({
         customerId: customer.id,
-        adminId: user.id,
         type: "serve",
         coffeeCount: 1,
-        amount: 0, // No amount charged since it's using pre-paid credits
-        drinkName: latestTopUp?.drinkName || "Coffee",
-        sizeName: latestTopUp?.sizeName || "Regular",
-        addons: latestTopUp?.addons || [],
-        notes: "",
-        description: `Served: ${latestTopUp?.drinkName || "Coffee"} (${latestTopUp?.sizeName || "Regular"})`,
+        description: "Coffee served",
       })
 
-      // Refresh customer data and transactions
-      const updatedCustomer = await supabaseService.getCustomer(customer.id)
-      if (updatedCustomer) {
-        onCustomerUpdate?.(updatedCustomer)
+      // Update customer balance (decrease by 1 coffee)
+      const updatedCustomer = await supabaseService.updateCustomer(customer.id, {
+        balance: customer.balance - 1,
+      })
+
+      if (onCustomerUpdate) {
+        onCustomerUpdate(updatedCustomer)
       }
+
+      if (onTransactionUpdate) {
+        onTransactionUpdate()
+      }
+
+      // Reload transactions
       await loadTransactions()
       
-      // Notify parent to refresh recent transactions
-      onTransactionUpdate?.()
-      
-      // Add a brief delay to show the success animation
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Add delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500))
     } catch (error) {
       console.error("Error serving coffee:", error)
     } finally {
@@ -353,302 +168,86 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
   }
 
   const handleTopUp = async () => {
-    if (!customer || !user) return
+    if (!customer || !selectedMenuItem || !selectedSize || topUpForm.coffeeCount < 1) return
 
-    setIsTopUp(true)
+    setIsProcessingTopUp(true)
     try {
-      // Get selected items from menu
-      const selectedDrink = menuItems.find((item) => item.id === topUpForm.drinkName)
-      const selectedSize = menuSizes.find((s) => s.id === topUpForm.sizeName)
-      const selectedAddonNames = topUpForm.addons
-        .map((addonId) => {
-          const addon = menuAddons.find((a) => a.id === addonId)
-          return addon?.name || ""
-        })
-        .filter((name) => name)
-
+      // Calculate total amount
+      const perCoffeePrice = calculateOrderTotal()
+      const totalAmount = (perCoffeePrice * topUpForm.coffeeCount) * (1 - topUpForm.discount / 100)
+      
+      // Create drink name with size and addons
+      const selectedAddonNames = selectedAddons
+        .map(id => menuAddons.find(a => a.id === id)?.name)
+        .filter((name): name is string => Boolean(name))
+      
+      const drinkName = `${selectedSize.displayName} ${selectedMenuItem.name}`
+      
+      // Create transaction record
       await supabaseService.createTransaction({
         customerId: customer.id,
-        adminId: user.id,
         type: "topup",
         coffeeCount: topUpForm.coffeeCount,
-        drinkName: selectedDrink?.name,
-        sizeName: selectedSize?.name,
+        amount: totalAmount,
+        drinkName: drinkName,
+        sizeName: selectedSize.displayName,
         addons: selectedAddonNames,
-        discountAmount: topUpForm.discountAmount,
+        discountAmount: (perCoffeePrice * topUpForm.coffeeCount) * (topUpForm.discount / 100),
         notes: topUpForm.notes,
-        description: `Top-up: ${topUpForm.coffeeCount} coffee${topUpForm.coffeeCount !== 1 ? "s" : ""} - ${selectedDrink?.name || "Coffee"} (${selectedSize?.name || "Regular"})`,
+        description: `Top-up: ${topUpForm.coffeeCount} x ${drinkName}${selectedAddonNames.length > 0 ? ` with ${selectedAddonNames.join(", ")}` : ""}`,
       })
 
-      // Refresh customer data and transactions
-      const updatedCustomer = await supabaseService.getCustomer(customer.id)
-      if (updatedCustomer) {
-        onCustomerUpdate?.(updatedCustomer)
+      // Update customer balance (add coffee count) and total spent
+      const updatedCustomer = await supabaseService.updateCustomer(customer.id, {
+        balance: customer.balance + topUpForm.coffeeCount,
+        totalSpent: customer.totalSpent + totalAmount,
+      })
+
+      if (onCustomerUpdate) {
+        onCustomerUpdate(updatedCustomer)
       }
-      await loadTransactions()
-      
-      // Notify parent to refresh recent transactions
-      onTransactionUpdate?.()
-      
-      // Add a brief delay to show the success animation
-      await new Promise(resolve => setTimeout(resolve, 300))
+
+      if (onTransactionUpdate) {
+        onTransactionUpdate()
+      }
 
       // Reset form
-      setTopUpForm({
-        coffeeCount: 1,
-        notes: "",
-        drinkName: menuItems.length > 0 ? menuItems[0].id : "",
-        sizeName: menuSizes.length > 0 ? menuSizes[0].id : "",
-        addons: [],
-        discountAmount: 0,
-      })
+      setTopUpForm({ coffeeCount: 1, discount: 0, notes: "" })
+      setSelectedMenuItem(null)
+      setSelectedSize(null)
+      setSelectedAddons([])
+      
+      await loadTransactions()
     } catch (error) {
-      console.error("Error topping up:", error)
+      console.error("Error processing top-up:", error)
     } finally {
-      setIsTopUp(false)
+      setIsProcessingTopUp(false)
     }
   }
 
   const handleAddonToggle = (addonId: string) => {
-    setTopUpForm((prev) => ({
-      ...prev,
-      addons: prev.addons.includes(addonId) ? prev.addons.filter((id) => id !== addonId) : [...prev.addons, addonId],
-    }))
+    setSelectedAddons(prev => 
+      prev.includes(addonId) 
+        ? prev.filter(id => id !== addonId)
+        : [...prev, addonId]
+    )
   }
 
-  const calculateTopUpTotal = () => {
-    // Base price from selected drink
-    const selectedDrink = menuItems.find((item) => item.id === topUpForm.drinkName)
-    let basePrice = selectedDrink?.basePrice || pricingConfig.defaultCoffeePrice
-
-    // Apply size modifier
-    const selectedSize = menuSizes.find((s) => s.id === topUpForm.sizeName)
-    if (selectedSize) {
-      basePrice += selectedSize.priceModifier
-    }
-
-    // Add addon prices
-    const addonTotal = topUpForm.addons.reduce((total, addonId) => {
-      const addon = menuAddons.find((a) => a.id === addonId)
-      return total + (addon?.priceModifier || 0)
-    }, 0)
-
-    const subtotal = (basePrice + addonTotal) * topUpForm.coffeeCount
-    const discountAmount = topUpForm.discountAmount || 0
-    return Math.max(0, subtotal - discountAmount)
-  }
 
   if (!customer) return null
 
+  const formatCurrency = (amount: number) => 
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
-
-  const getBalanceStatus = (balance: number) => {
-    if (balance === 0) return { color: "destructive", text: "Empty" }
-    if (balance <= 2) return { color: "secondary", text: "Low" }
-    if (balance <= 5) return { color: "default", text: "Medium" }
-    return { color: "default", text: "Good" }
-  }
-
-  const balanceStatus = getBalanceStatus(customer.balance)
-
-  // Check if email is valid for authentication setup
-  const isValidEmail = editForm.email && editForm.email.includes("@") && editForm.email.includes(".")
-  const hasEmailChanged = editForm.email !== customer.email
-  const canSetupAuth = isValidEmail && (hasEmailChanged || !customer.email)
-
-  // If editing, show only the edit form
-  if (isEditing) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <DialogTitle className="text-xl">Edit Customer Profile</DialogTitle>
-                <p className="text-sm text-muted-foreground">Update customer information</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={handleSaveEdit}
-                disabled={isSaving}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save Changes
-              </Button>
-              <Button onClick={handleCancelEdit} variant="outline" size="sm">
-                <X className="h-4 w-4" />
-                Cancel
-              </Button>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Personal Information</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={editForm.firstName}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, firstName: e.target.value }))}
-                      placeholder="First name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={editForm.lastName}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, lastName: e.target.value }))}
-                      placeholder="Last name"
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="email" className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4" />
-                      <span>Email</span>
-                    </Label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="email"
-                        type="email"
-                        value={editForm.email}
-                        onChange={(e) => {
-                          setEditForm((prev) => ({ ...prev, email: e.target.value }))
-                          setAuthEmailSent(false) // Reset auth email sent status when email changes
-                          setAuthError("") // Clear any previous errors
-                        }}
-                        placeholder="Email address"
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={handleSendAuthEmail}
-                        disabled={!canSetupAuth || isSendingAuth || authEmailSent}
-                        variant="outline"
-                        size="sm"
-                        className="whitespace-nowrap bg-transparent"
-                      >
-                        {isSendingAuth ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : authEmailSent ? (
-                          <Mail className="h-4 w-4 mr-2" />
-                        ) : (
-                          <UserPlus className="h-4 w-4 mr-2" />
-                        )}
-                        {authEmailSent ? "Email Sent" : "Setup Auth"}
-                      </Button>
-                    </div>
-
-                    {/* Success Message */}
-                    {authEmailSent && !authError && (
-                      <p className="text-sm text-green-600 mt-1">
-                        ✅ Authentication setup email sent to {editForm.email}. Customer can now set their password and
-                        login.
-                      </p>
-                    )}
-
-                    {/* Error Message */}
-                    {authError && (
-                      <div className="flex items-center text-red-600 text-sm mt-1 p-2 bg-red-50 rounded-md">
-                        <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                        <span>{authError}</span>
-                      </div>
-                    )}
-
-                    {/* Help Text */}
-                    {canSetupAuth && !authEmailSent && !authError && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Click "Setup Auth" to send authentication setup email to this customer.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4" />
-                      <span>Phone</span>
-                    </Label>
-                    <Input
-                      id="phone"
-                      value={editForm.phone}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Phone number"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={editForm.status}
-                      onValueChange={(value: "active" | "inactive") =>
-                        setEditForm((prev) => ({ ...prev, status: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Notification Preferences</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="low-balance-edit">Low Balance Notifications</Label>
-                      <Switch
-                        id="low-balance-edit"
-                        checked={editForm.notificationLowBalance}
-                        onCheckedChange={(checked) =>
-                          setEditForm((prev) => ({ ...prev, notificationLowBalance: checked }))
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="topup-edit">Top-up Notifications</Label>
-                      <Switch
-                        id="topup-edit"
-                        checked={editForm.notificationTopup}
-                        onCheckedChange={(checked) => setEditForm((prev) => ({ ...prev, notificationTopup: checked }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
+    }).format(date)
   }
 
   return (
@@ -671,158 +270,260 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="actions">Actions</TabsTrigger>
+            <TabsTrigger value="topup">Top Up</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Combined Coffee Balance and Serve Coffee Section */}
+            {/* Coffee Balance Card */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Coffee Balance & Service</CardTitle>
-                <Coffee className="h-4 w-4 text-muted-foreground" />
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Coffee className="h-5 w-5" />
+                  <span>Coffee Balance</span>
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center space-y-3">
-                  {/* Coffee Balance Display */}
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="text-4xl font-bold">{customer.balance}</div>
-                    <Badge variant={balanceStatus.color as any} className="text-sm">
-                      {balanceStatus.text}
-                    </Badge>
-                  </div>
-                  <p className="text-base text-muted-foreground">
-                    {customer.balance === 1 ? "coffee remaining" : "coffees remaining"}
-                  </p>
-
-                  {/* Visit Count */}
-                  <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>{customer.visitCount} total visits</span>
-                  </div>
-
-                  {/* Serve Button */}
-                  <Button
-                    onClick={handleServeCoffee}
-                    disabled={isServing || customer.balance < 1}
-                    className={`
-                      w-full h-16 text-lg font-semibold text-white
-                      transition-all duration-300 ease-in-out
-                      transform active:scale-95
-                      ${isServing 
-                        ? "bg-orange-500 hover:bg-orange-600 shadow-lg scale-105" 
-                        : customer.balance < 1 
-                          ? "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" 
-                          : "bg-red-600 hover:bg-red-700 hover:scale-102 hover:shadow-lg"
-                      }
-                    `}
-                    size="lg"
-                  >
-                    <div className="flex items-center justify-center transition-all duration-200">
-                      {isServing ? (
-                        <>
-                          <Loader2 className="h-6 w-6 animate-spin mr-3 text-white" />
-                          <span className="animate-pulse">Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Coffee className={`h-6 w-6 mr-3 transition-transform duration-200 ${
-                            customer.balance < 1 ? "" : "group-hover:rotate-12"
-                          }`} />
-                          <span className="transition-all duration-200">
-                            {customer.balance < 1 ? "Insufficient Balance" : "SERVE COFFEE"}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </Button>
+              <CardContent className="text-center">
+                <div className="text-6xl font-bold text-primary mb-2">
+                  {customer.balance}
                 </div>
+                <p className="text-xl font-semibold mb-2">
+                  Coffee{customer.balance === 1 ? '' : 's'} Available
+                </p>
+                <div className="text-sm text-muted-foreground mb-4 space-y-1">
+                  <p>Visit Count: {customer.visitCount || 0}</p>
+                  <p>Last Visit: {customer.lastVisit ? formatDate(customer.lastVisit) : "Never"}</p>
+                  <p>Last updated: {formatDate(customer.updatedAt)}</p>
+                </div>
+                {customer.balance < 3 && (
+                  <Badge variant="destructive" className="mb-4">Low Balance</Badge>
+                )}
               </CardContent>
             </Card>
+
+            {/* Serve Coffee Button */}
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  onClick={handleServeCoffee}
+                  disabled={customer.balance < 1 || isServing}
+                  className={`
+                    w-full h-20 text-xl font-bold text-white
+                    transition-all duration-300 ease-in-out
+                    transform active:scale-95
+                    ${isServing 
+                      ? "bg-orange-500 hover:bg-orange-600 shadow-lg scale-105" 
+                      : customer.balance < 1
+                        ? "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" 
+                        : "bg-red-600 hover:bg-red-700 hover:scale-102 hover:shadow-lg"
+                    }
+                  `}
+                >
+                  {isServing ? (
+                    <>
+                      <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                      Serving Coffee...
+                    </>
+                  ) : customer.balance < 1 ? (
+                    "No Coffee Available"
+                  ) : (
+                    <>
+                      <Coffee className="mr-3 h-6 w-6" />
+                      Serve Coffee
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
           </TabsContent>
 
-          <TabsContent value="details" className="space-y-6">
-            {/* Customer Details */}
+          <TabsContent value="topup" className="space-y-6">
+            {/* Top-up Menu Selection */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span>Customer Details</span>
-                </CardTitle>
-                <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
-                  <Edit3 className="h-4 w-4" />
-                  Edit
-                </Button>
+              <CardHeader>
+                <CardTitle>Buy Coffee in Bulk</CardTitle>
+                <CardDescription>Select coffee options and quantity for customer</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Coffee Type and Size - Side by Side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4" />
-                      <span>Email</span>
-                    </Label>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-sm flex-1">{customer.email || "Not provided"}</p>
-                      {!customer.email && (
-                        <Badge variant="secondary" className="text-xs">
-                          No Auth
-                        </Badge>
-                      )}
-                    </div>
+                    <Label>Coffee Type</Label>
+                    <Select
+                      value={selectedMenuItem?.id || ""}
+                      onValueChange={(value) => {
+                        const item = menuItems.find(i => i.id === value)
+                        setSelectedMenuItem(item || null)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a coffee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {menuItems.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name} - {formatCurrency(item.basePrice)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4" />
-                      <span>Phone</span>
-                    </Label>
-                    <p className="text-sm">{customer.phone || "Not provided"}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Badge variant={customer.status === "active" ? "default" : "secondary"}>{customer.status}</Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>Member Since</span>
-                    </Label>
-                    <p className="text-sm">{formatDate(customer.createdAt)}</p>
+                    <Label>Size</Label>
+                    <Select
+                      value={selectedSize?.id || ""}
+                      onValueChange={(value) => {
+                        const size = menuSizes.find(s => s.id === value)
+                        setSelectedSize(size || null)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {menuSizes.map((size) => (
+                          <SelectItem key={size.id} value={size.id}>
+                            {size.displayName} (+{formatCurrency(size.priceModifier)})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="font-medium">Notification Preferences</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label>Low Balance Notifications</Label>
-                      <Badge variant={customer.notificationLowBalance ? "default" : "secondary"}>
-                        {customer.notificationLowBalance ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Label>Top-up Notifications</Label>
-                      <Badge variant={customer.notificationTopup ? "default" : "secondary"}>
-                        {customer.notificationTopup ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
+                {/* Add-ons */}
+                <div className="space-y-2">
+                  <Label>Add-ons (optional)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {menuAddons.map((addon) => (
+                      <div key={addon.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`addon-${addon.id}`}
+                          checked={selectedAddons.includes(addon.id)}
+                          onChange={() => handleAddonToggle(addon.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor={`addon-${addon.id}`} className="text-sm">
+                          {addon.name} (+{formatCurrency(addon.priceModifier)})
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {customer.lastVisit && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <Label>Last Visit</Label>
-                      <p className="text-sm">{formatDate(customer.lastVisit)}</p>
+                {/* Number of Coffees and Discount % - Side by Side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Number of Coffees</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={topUpForm.coffeeCount}
+                      onChange={(e) => setTopUpForm(prev => ({ 
+                        ...prev, 
+                        coffeeCount: parseInt(e.target.value) || 1 
+                      }))}
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Discount %</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={topUpForm.discount}
+                      onChange={(e) => setTopUpForm(prev => ({ 
+                        ...prev, 
+                        discount: parseFloat(e.target.value) || 0 
+                      }))}
+                      placeholder="Enter discount percentage"
+                    />
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label>Notes (optional)</Label>
+                  <Input
+                    value={topUpForm.notes}
+                    onChange={(e) => setTopUpForm(prev => ({ 
+                      ...prev, 
+                      notes: e.target.value 
+                    }))}
+                    placeholder="Add any notes"
+                  />
+                </div>
+
+                {/* Order Summary */}
+                {selectedMenuItem && selectedSize && (
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span>Per Coffee Price:</span>
+                      <span>{formatCurrency(calculateOrderTotal())}</span>
                     </div>
-                  </>
+                    <div className="flex justify-between items-center">
+                      <span>Quantity:</span>
+                      <span>{topUpForm.coffeeCount} coffee{topUpForm.coffeeCount > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(calculateOrderTotal() * topUpForm.coffeeCount)}</span>
+                    </div>
+                    {topUpForm.discount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span>Discount ({topUpForm.discount}%):</span>
+                        <span>-{formatCurrency((calculateOrderTotal() * topUpForm.coffeeCount) * (topUpForm.discount / 100))}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center font-bold text-lg border-t pt-2">
+                      <span>Total:</span>
+                      <span>{formatCurrency(
+                        (calculateOrderTotal() * topUpForm.coffeeCount) * (1 - topUpForm.discount / 100)
+                      )}</span>
+                    </div>
+                  </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Top-up Button */}
+            <Card>
+              <CardContent className="pt-6">
+                <Button
+                  onClick={handleTopUp}
+                  disabled={!selectedMenuItem || !selectedSize || isProcessingTopUp || topUpForm.coffeeCount < 1}
+                  className={`
+                    w-full h-16 text-lg font-semibold text-white
+                    transition-all duration-300 ease-in-out
+                    transform active:scale-95
+                    ${isProcessingTopUp 
+                      ? "bg-green-500 hover:bg-green-600 shadow-lg scale-105" 
+                      : !selectedMenuItem || !selectedSize || topUpForm.coffeeCount < 1
+                        ? "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" 
+                        : "bg-green-600 hover:bg-green-700 hover:scale-102 hover:shadow-lg"
+                    }
+                  `}
+                >
+                  {isProcessingTopUp ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Processing...
+                    </>
+                  ) : !selectedMenuItem || !selectedSize ? (
+                    "Select Coffee & Size"
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-2 h-5 w-5" />
+                      Add {topUpForm.coffeeCount} Coffee{topUpForm.coffeeCount > 1 ? 's' : ''}
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -834,65 +535,54 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
                   <History className="h-5 w-5" />
                   <span>Transaction History</span>
                 </CardTitle>
-                <CardDescription>Recent coffee transactions for this customer</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span className="ml-2">Loading transactions...</span>
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : transactions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No transactions found</p>
+                    No transactions found
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {transactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="space-y-2">
+                    {transactions.slice(0, 20).map((transaction) => (
+                      <div
+                        key={transaction.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex items-center space-x-3">
-                          <div
-                            className={`p-2 rounded-full ${
-                              transaction.type === "topup"
-                                ? "bg-green-100 text-green-600"
-                                : transaction.type === "serve"
-                                  ? "bg-blue-100 text-blue-600"
-                                  : "bg-orange-100 text-orange-600"
-                            }`}
-                          >
-                            <Coffee className="h-4 w-4" />
-                          </div>
+                          {transaction.type === "serve" ? (
+                            <Coffee className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <TrendingUp className="h-4 w-4 text-green-500" />
+                          )}
                           <div>
-                            <p className="font-medium">{transaction.description}</p>
-                            <p className="text-sm text-muted-foreground">{formatDate(transaction.createdAt)}</p>
-                            {transaction.notes && (
-                              <p className="text-xs text-muted-foreground italic">{transaction.notes}</p>
-                            )}
-                            {/* {transaction.discountAmount && transaction.discountAmount > 0 && (
-                              <p className="text-xs text-green-600 font-medium">
-                                Discount Applied: -${transaction.discountAmount.toFixed(2)}
-                              </p>
-                            )} */}
+                            <div className="font-medium">
+                              {transaction.type === "serve" ? "Coffee Served" : "Coffee Top-up"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {transaction.description || transaction.drinkName || "Coffee purchase"}
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="flex items-center space-x-2">
-                            <Badge
-                              variant={
-                                transaction.type === "topup"
-                                  ? "default"
-                                  : transaction.type === "serve"
-                                    ? "secondary"
-                                    : "outline"
-                              }
-                            >
-                              {transaction.type === "topup" ? "+" : transaction.type === "serve" ? "-" : "+"}
-                              {transaction.coffeeCount}
-                            </Badge>
-                            {/* {transaction.amount && (
-                              <span className="text-sm font-medium">${transaction.amount.toFixed(2)}</span>
-                            )} */}
+                          <div className={`font-medium ${
+                            transaction.type === "serve" ? "text-red-600" : "text-green-600"
+                          }`}>
+                            {transaction.type === "serve" 
+                              ? `-1 Coffee` 
+                              : `+${transaction.coffeeCount || 1} Coffee${(transaction.coffeeCount || 1) > 1 ? 's' : ''}`
+                            }
+                          </div>
+                          {transaction.amount && transaction.type === "topup" && (
+                            <div className="text-sm text-green-600 font-medium">
+                              {formatCurrency(transaction.amount)}
+                            </div>
+                          )}
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(transaction.timestamp)}
                           </div>
                         </div>
                       </div>
@@ -903,193 +593,82 @@ export function CustomerDetailsModal({ customer, isOpen, onClose, onCustomerUpda
             </Card>
           </TabsContent>
 
-          <TabsContent value="actions" className="space-y-6">
-            {/* Top Up */}
+          <TabsContent value="details" className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center space-x-2">
-                  <CreditCard className="h-5 w-5" />
-                  <span>Add Coffee Credits</span>
+                  <User className="h-5 w-5" />
+                  <span>Customer Details</span>
                 </CardTitle>
-                <CardDescription>Add coffee credits to this customer's account</CardDescription>
+                <Button onClick={() => onEdit?.(customer)} variant="outline" size="sm">
+                  <Edit3 className="h-4 w-4" />
+                  Edit
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                {isMenuLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    <span>Loading menu options...</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <div className="px-3 py-2 border rounded-md bg-muted">
+                      {customer.firstName}
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Drink Type</Label>
-                        <Select
-                          value={topUpForm.drinkName}
-                          onValueChange={(value) => setTopUpForm((prev) => ({ ...prev, drinkName: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select drink type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {menuItems.map((item) => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name} - ${item.basePrice.toFixed(2)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Size</Label>
-                        <Select
-                          value={topUpForm.sizeName}
-                          onValueChange={(value) => setTopUpForm((prev) => ({ ...prev, sizeName: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {menuSizes.map((size) => (
-                              <SelectItem key={size.id} value={size.id}>
-                                {size.name} {size.priceModifier > 0 && `(+$${size.priceModifier.toFixed(2)})`}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <div className="px-3 py-2 border rounded-md bg-muted">
+                      {customer.lastName}
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Add-ons</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        {menuAddons.map((addon) => (
-                          <div key={addon.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`topup-addon-${addon.id}`}
-                              checked={topUpForm.addons.includes(addon.id)}
-                              onCheckedChange={() => handleAddonToggle(addon.id)}
-                            />
-                            <Label htmlFor={`topup-addon-${addon.id}`} className="text-sm cursor-pointer">
-                              {addon.name} (+${addon.priceModifier.toFixed(2)})
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <div className="px-3 py-2 border rounded-md bg-muted">
+                      {customer.email || "No email set"}
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Number of Coffees</Label>
-                        <Select
-                          value={topUpForm.coffeeCount.toString()}
-                          onValueChange={(value) =>
-                            setTopUpForm((prev) => ({ ...prev, coffeeCount: Number.parseInt(value) }))
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[1, 2, 3, 4, 5, 10, 15, 20].map((count) => (
-                              <SelectItem key={count} value={count.toString()}>
-                                {count} Coffee{count !== 1 ? "s" : ""}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="flex items-center space-x-2">
-                          <Percent className="h-4 w-4" />
-                          <span>Discount Amount ($)</span>
-                        </Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={topUpForm.discountAmount.toString()}
-                          onChange={(e) =>
-                            setTopUpForm((prev) => ({
-                              ...prev,
-                              discountAmount: Number.parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                          placeholder="0.00"
-                        />
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <div className="px-3 py-2 border rounded-md bg-muted">
+                      {customer.phone || "No phone number"}
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>Notes (Optional)</Label>
-                      <Input
-                        value={topUpForm.notes}
-                        onChange={(e) => setTopUpForm((prev) => ({ ...prev, notes: e.target.value }))}
-                        placeholder="Add any notes about this top-up..."
-                      />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Badge variant={customer.status === "active" ? "default" : "secondary"}>
+                      {customer.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Member Since</Label>
+                    <div className="px-3 py-2 border rounded-md bg-muted">
+                      {formatDate(customer.createdAt)}
                     </div>
+                  </div>
+                </div>
 
-                    <div className="p-3 bg-muted rounded-lg">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Subtotal:</span>
-                          <span className="text-sm">
-                            ${(calculateTopUpTotal() + (topUpForm.discountAmount || 0)).toFixed(2)}
-                          </span>
-                        </div>
-                        {topUpForm.discountAmount > 0 && (
-                          <div className="flex justify-between items-center text-green-600">
-                            <span className="text-sm">Discount:</span>
-                            <span className="text-sm">-${topUpForm.discountAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        <Separator />
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium">Total:</span>
-                          <span className="text-lg font-bold">${calculateTopUpTotal().toFixed(2)}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {topUpForm.coffeeCount} coffee{topUpForm.coffeeCount !== 1 ? "s" : ""}
-                          with selected options
-                        </p>
-                      </div>
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label className="text-base font-medium">Notification Settings</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Low Balance Notifications</span>
+                      <Badge variant={customer.notificationLowBalance ? "default" : "secondary"}>
+                        {customer.notificationLowBalance ? "Enabled" : "Disabled"}
+                      </Badge>
                     </div>
-
-                    <Button
-                      onClick={handleTopUp}
-                      disabled={isTopUp}
-                      className={`
-                        w-full transition-all duration-300 ease-in-out
-                        transform active:scale-95
-                        ${isTopUp 
-                          ? "bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105 border-green-500" 
-                          : "bg-transparent hover:bg-green-50 hover:scale-102 hover:shadow-md border-green-300"
-                        }
-                      `}
-                      variant="outline"
-                    >
-                      <div className="flex items-center justify-center transition-all duration-200">
-                        {isTopUp ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            <span className="animate-pulse">Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CreditCard className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:rotate-12" />
-                            <span>Add {topUpForm.coffeeCount} Coffee{topUpForm.coffeeCount !== 1 ? "s" : ""}</span>
-                          </>
-                        )}
-                      </div>
-                    </Button>
-                  </>
-                )}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <span className="text-sm">Top-up Notifications</span>
+                      <Badge variant={customer.notificationTopup ? "default" : "secondary"}>
+                        {customer.notificationTopup ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
       </DialogContent>
     </Dialog>
   )

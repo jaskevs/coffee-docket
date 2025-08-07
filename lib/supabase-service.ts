@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "./supabase"
+import { getSupabaseClient, getSupabaseAdminClient } from "./supabase"
 
 export interface Customer {
   id: string
@@ -144,16 +144,12 @@ class SupabaseService {
       const supabase = await getSupabaseClient()
       if (!supabase) throw new Error("Supabase client not available")
 
-      console.log("🔍 Searching for customer with email:", email)
-
       const { data, error } = await supabase.from("customers").select("*").eq("email", email).single()
 
       if (error) {
-        console.error("❌ Error fetching customer by email:", error)
+        console.error("Error fetching customer by email:", error)
         return null
       }
-
-      console.log("✅ Found customer data:", data)
 
       return {
         id: data.id,
@@ -173,6 +169,40 @@ class SupabaseService {
       }
     } catch (error) {
       console.error("Error fetching customer by email:", error)
+      return null
+    }
+  }
+
+  async getCustomerById(id: string): Promise<Customer | null> {
+    try {
+      const supabase = await getSupabaseClient()
+      if (!supabase) throw new Error("Supabase client not available")
+
+      const { data, error } = await supabase.from("customers").select("*").eq("id", id).single()
+
+      if (error) {
+        console.error("Error fetching customer by ID:", error)
+        return null
+      }
+
+      return {
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: data.email,
+        phone: data.phone,
+        balance: data.coffee_balance || 0,
+        totalSpent: Number.parseFloat(data.total_spent) || 0,
+        visitCount: data.visit_count || 0,
+        lastVisit: data.last_visit,
+        status: data.status || "active",
+        notificationLowBalance: data.notification_low_balance ?? true,
+        notificationTopup: data.notification_topup ?? true,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at || data.created_at,
+      }
+    } catch (error) {
+      console.error("Error fetching customer by ID:", error)
       return null
     }
   }
@@ -232,7 +262,7 @@ class SupabaseService {
       const updateData: any = {}
       if (updates.firstName) updateData.first_name = updates.firstName
       if (updates.lastName) updateData.last_name = updates.lastName
-      if (updates.email) updateData.email = updates.email
+      if (updates.email !== undefined) updateData.email = updates.email
       if (updates.phone !== undefined) updateData.phone = updates.phone
       if (updates.balance !== undefined) updateData.coffee_balance = updates.balance
       if (updates.totalSpent !== undefined) updateData.total_spent = updates.totalSpent
@@ -282,6 +312,175 @@ class SupabaseService {
     } catch (error) {
       console.error("Error deleting customer:", error)
       throw error
+    }
+  }
+
+  async deleteCustomerCompletely(id: string): Promise<void> {
+    try {
+      const supabase = await getSupabaseClient()
+      if (!supabase) throw new Error("Supabase client not available")
+
+      // First, get the customer to check if they have an email (for auth deletion)
+      const { data: customer, error: fetchError } = await supabase
+        .from("customers")
+        .select("email")
+        .eq("id", id)
+        .single()
+
+      if (fetchError) {
+        console.error("Error fetching customer for deletion:", fetchError)
+        throw fetchError
+      }
+
+      // If customer has email, try to remove from Supabase Auth using admin client
+      if (customer?.email) {
+        try {
+          const adminClient = await getSupabaseAdminClient()
+          if (adminClient) {
+            // First, find the auth user by email
+            const { data: authUsers, error: listError } = await adminClient.auth.admin.listUsers()
+            
+            if (!listError && authUsers) {
+              const authUser = authUsers.users.find((user: any) => user.email === customer.email)
+              
+              if (authUser) {
+                // Delete the auth user
+                const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(authUser.id)
+                
+                if (deleteAuthError) {
+                  console.error("Error deleting auth user:", deleteAuthError)
+                }
+              }
+            } else if (listError) {
+              console.error("Error listing auth users:", listError)
+            }
+          }
+        } catch (authError) {
+          console.error("Error during auth cleanup:", authError)
+          // Continue with customer deletion even if auth cleanup fails
+        }
+      }
+
+      // Delete from customers table
+      const { error: deleteError } = await supabase.from("customers").delete().eq("id", id)
+
+      if (deleteError) {
+        console.error("Error deleting customer from database:", deleteError)
+        throw deleteError
+      }
+    } catch (error) {
+      console.error("Error deleting customer completely:", error)
+      throw error
+    }
+  }
+
+  async removeCustomerAuthentication(customerId: string): Promise<void> {
+    try {
+      const supabase = await getSupabaseClient()
+      if (!supabase) throw new Error("Supabase client not available")
+
+      // Get the customer's email to find them in auth
+      const { data: customer, error: fetchError } = await supabase
+        .from("customers")
+        .select("email")
+        .eq("id", customerId)
+        .single()
+
+      if (fetchError) {
+        console.error("Error fetching customer for auth removal:", fetchError)
+        return
+      }
+
+      if (customer?.email) {
+        try {
+          const adminClient = await getSupabaseAdminClient()
+          if (adminClient) {
+            // Find the auth user by email
+            const { data: authUsers, error: listError } = await adminClient.auth.admin.listUsers()
+            
+            if (!listError && authUsers) {
+              const authUser = authUsers.users.find((user: any) => user.email === customer.email)
+              
+              if (authUser) {
+                // Delete the auth user
+                const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(authUser.id)
+                
+                if (deleteAuthError) {
+                  console.error("Error deleting auth user:", deleteAuthError)
+                }
+              }
+            } else if (listError) {
+              console.error("Error listing auth users:", listError)
+            }
+          }
+        } catch (authError) {
+          console.error("Error during auth cleanup:", authError)
+        }
+      }
+    } catch (error) {
+      console.error("Error in authentication removal process:", error)
+      // Don't throw the error since email clearing is the main goal and that works
+    }
+  }
+
+  async sendAuthInvitation(email: string, userData: { firstName: string; lastName: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const adminClient = await getSupabaseAdminClient()
+      if (!adminClient) {
+        return { success: false, error: "Admin client not available - check SUPABASE_SERVICE_ROLE_KEY environment variable" }
+      }
+
+      // Check if user already exists in auth
+      const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers()
+      
+      if (listError) {
+        console.error("Error checking existing users:", listError)
+        return { success: false, error: "Failed to check existing users: " + listError.message }
+      }
+
+      const existingUser = existingUsers.users.find((user: any) => user.email === email)
+      
+      if (existingUser) {
+        return { success: false, error: "User already has authentication access" }
+      }
+
+      // Create user with email invitation
+      const { data, error } = await adminClient.auth.admin.createUser({
+        email: email,
+        email_confirm: false, // This will send a confirmation email
+        user_metadata: {
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          full_name: `${userData.firstName} ${userData.lastName}`
+        }
+      })
+
+      if (error) {
+        console.error("Error creating auth user:", error)
+        return { success: false, error: error.message }
+      }
+      
+      // Send a password reset email to let them set their password
+      // Use the regular client for this as it doesn't require admin permissions
+      const regularClient = await getSupabaseClient()
+      if (regularClient) {
+        const { error: resetError } = await regularClient.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/reset-password`
+        })
+
+        if (resetError) {
+          console.error("Error sending password reset email:", resetError)
+          // Don't fail the whole process if password reset email fails
+        }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error("Error in sendAuthInvitation:", error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error occurred" 
+      }
     }
   }
 
@@ -487,12 +686,12 @@ class SupabaseService {
       if (transactionError) throw transactionError
 
       const totalCustomers = customerData.length
-      const totalBalance = customerData.reduce((sum, customer) => sum + (customer.coffee_balance || 0), 0)
+      const totalBalance = customerData.reduce((sum: number, customer: any) => sum + (customer.coffee_balance || 0), 0)
       const totalTransactions = transactionData.length
 
-      const serveTransactions = transactionData.filter((t) => t.type === "serve")
+      const serveTransactions = transactionData.filter((t: any) => t.type === "serve")
       const totalRevenue = serveTransactions.reduce(
-        (sum, transaction) => sum + Number.parseFloat(transaction.amount || 0),
+        (sum: number, transaction: any) => sum + Number.parseFloat(transaction.amount || 0),
         0,
       )
       const averageOrderValue = serveTransactions.length > 0 ? totalRevenue / serveTransactions.length : 0

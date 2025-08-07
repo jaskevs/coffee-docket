@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Eye, EyeOff, Coffee, Sparkles } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import type { LoginFormData, SignUpFormData } from "@/types/auth"
+import type { LoginFormData, SignupFormData } from "@/types/auth"
 
 export function AuthForms() {
   const { login, demoLogin, isLoading } = useAuth()
@@ -19,7 +19,7 @@ export function AuthForms() {
   const [activeTab, setActiveTab] = useState("login")
 
   const loginForm = useForm<LoginFormData>()
-  const signupForm = useForm<SignUpFormData>()
+  const signupForm = useForm<SignupFormData>()
 
   const onLogin = async (data: LoginFormData) => {
     setAuthError(null)
@@ -29,7 +29,7 @@ export function AuthForms() {
     }
   }
 
-  const onSignup = async (data: SignUpFormData) => {
+  const onSignup = async (data: SignupFormData) => {
     setAuthError(null)
     // Simulate signup
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -191,22 +191,42 @@ export function AuthForms() {
 
               <TabsContent value="signup" className="mt-4">
                 <form onSubmit={signupForm.handleSubmit(onSignup)} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-gray-700 font-medium">
-                      Full Name
-                    </Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      className="h-12 text-base border-gray-200 focus:border-mint-300 focus:ring-mint-300"
-                      {...signupForm.register("name", {
-                        required: "Name is required",
-                      })}
-                    />
-                    {signupForm.formState.errors.name && (
-                      <p className="text-sm text-red-600">{signupForm.formState.errors.name.message}</p>
-                    )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-firstName" className="text-gray-700 font-medium">
+                        First Name
+                      </Label>
+                      <Input
+                        id="signup-firstName"
+                        type="text"
+                        placeholder="John"
+                        className="h-12 text-base border-gray-200 focus:border-mint-300 focus:ring-mint-300"
+                        {...signupForm.register("firstName", {
+                          required: "First name is required",
+                        })}
+                      />
+                      {signupForm.formState.errors.firstName && (
+                        <p className="text-sm text-red-600">{signupForm.formState.errors.firstName.message}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-lastName" className="text-gray-700 font-medium">
+                        Last Name
+                      </Label>
+                      <Input
+                        id="signup-lastName"
+                        type="text"
+                        placeholder="Doe"
+                        className="h-12 text-base border-gray-200 focus:border-mint-300 focus:ring-mint-300"
+                        {...signupForm.register("lastName", {
+                          required: "Last name is required",
+                        })}
+                      />
+                      {signupForm.formState.errors.lastName && (
+                        <p className="text-sm text-red-600">{signupForm.formState.errors.lastName.message}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -250,6 +270,28 @@ export function AuthForms() {
                     />
                     {signupForm.formState.errors.password && (
                       <p className="text-sm text-red-600">{signupForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-confirmPassword" className="text-gray-700 font-medium">
+                      Confirm Password
+                    </Label>
+                    <Input
+                      id="signup-confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      className="h-12 text-base border-gray-200 focus:border-mint-300 focus:ring-mint-300"
+                      {...signupForm.register("confirmPassword", {
+                        required: "Please confirm your password",
+                        validate: (value) => {
+                          const password = signupForm.watch("password")
+                          return value === password || "Passwords do not match"
+                        },
+                      })}
+                    />
+                    {signupForm.formState.errors.confirmPassword && (
+                      <p className="text-sm text-red-600">{signupForm.formState.errors.confirmPassword.message}</p>
                     )}
                   </div>
 

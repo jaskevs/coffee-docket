@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CustomerCard } from "./customer-card"
 import { CustomerDetailsModal } from "./customer-details-modal"
+import { CustomerEditModal } from "./customer-edit-modal"
 import { CustomerSearch } from "./customer-search"
 import { AddCustomerModal } from "@/components/admin/add-customer-modal"
 import { useDebouncedSearch } from "@/hooks/use-debounced-search"
@@ -21,6 +22,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState({
@@ -63,7 +65,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         return transactionDate >= today
       })
 
-      const totalRevenue = todayTransactions.filter((t) => t.type === "purchase").reduce((sum, t) => sum + t.amount, 0)
+      const totalRevenue = todayTransactions.filter((t) => t.type === "topup").reduce((sum, t) => sum + (t.amount || 0), 0)
 
       setStats({
         totalCustomers: statistics.totalCustomers,
@@ -111,6 +113,45 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       setRecentTransactions(recentTxns)
     } catch (error) {
       console.error("Error refreshing recent transactions:", error)
+    }
+  }
+
+  const handleCustomerDelete = (deletedCustomerId: string) => {
+    // Remove the customer from the list
+    setCustomers((prev) => prev.filter((c) => c.id !== deletedCustomerId))
+    
+    // Close modals if the deleted customer was selected
+    if (selectedCustomer?.id === deletedCustomerId) {
+      setSelectedCustomer(null)
+      setIsModalOpen(false)
+      setIsEditModalOpen(false)
+    }
+    
+    // Refresh data to update stats
+    loadData()
+  }
+
+  const handleEditCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer)
+    setIsModalOpen(false) // Close details modal
+    setIsEditModalOpen(true) // Open edit modal
+  }
+
+  const handleEditSave = (updatedCustomer: Customer) => {
+    // Update the customer in the list
+    setCustomers((prev) => prev.map((c) => (c.id === updatedCustomer.id ? updatedCustomer : c)))
+    setSelectedCustomer(updatedCustomer)
+    
+    // Close edit modal and reopen details modal
+    setIsEditModalOpen(false)
+    setIsModalOpen(true)
+  }
+
+  const handleEditClose = () => {
+    setIsEditModalOpen(false)
+    // Reopen details modal if there's a selected customer
+    if (selectedCustomer) {
+      setIsModalOpen(true)
     }
   }
 
@@ -234,13 +275,13 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No customers found</h3>
                 <p className="text-gray-600 text-sm mb-4">We couldn't find any customers matching "{searchQuery}"</p>
-                <Button
+                {/* <Button
                   variant="outline"
                   onClick={clearSearch}
                   className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent hover:scale-105 transition-all duration-200"
                 >
                   Clear search
-                </Button>
+                </Button> */}
               </div>
             )}
 
@@ -289,7 +330,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
             <Button
               onClick={() => onNavigate("menu-management")}
-              className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white"
+              className="w-full justify-start bg-slate-600 hover:bg-slate-700 text-white"
               size="lg"
             >
               <Menu className="mr-3 h-5 w-5" />
@@ -392,6 +433,18 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           onClose={handleCloseModal}
           onCustomerUpdate={handleCustomerUpdate}
           onTransactionUpdate={handleTransactionUpdate}
+          onEdit={handleEditCustomer}
+        />
+      )}
+
+      {/* Customer Edit Modal */}
+      {selectedCustomer && (
+        <CustomerEditModal
+          customer={selectedCustomer}
+          isOpen={isEditModalOpen}
+          onClose={handleEditClose}
+          onSave={handleEditSave}
+          onDelete={handleCustomerDelete}
         />
       )}
 
