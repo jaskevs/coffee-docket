@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { supabase } from "@/lib/supabase"
 
 interface ForgotPasswordPageProps {
   onBack: () => void
@@ -22,6 +23,9 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("=== FORGOT PASSWORD STARTED ===")
+    console.log("Email:", email)
+    
     setError("")
     setIsLoading(true)
 
@@ -38,11 +42,36 @@ export function ForgotPasswordPage({ onBack }: ForgotPasswordPageProps) {
     }
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      if (!supabase) {
+        throw new Error("Authentication service not available")
+      }
+
+      console.log("Sending password reset email...")
+      
+      // Send password reset email using Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+
+      if (error) {
+        console.error("Password reset error:", error)
+        throw error
+      }
+
+      console.log("Password reset email sent successfully")
+      console.log("=== FORGOT PASSWORD COMPLETED ===")
       setSuccess(true)
-    } catch (err) {
-      setError("Failed to send reset email. Please try again.")
+    } catch (err: any) {
+      console.error("Error sending password reset:", err)
+      
+      // Handle specific Supabase errors
+      if (err.message?.includes('Invalid email')) {
+        setError("Please enter a valid email address.")
+      } else if (err.message?.includes('rate limit')) {
+        setError("Too many reset attempts. Please wait before trying again.")
+      } else {
+        setError("Failed to send reset email. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
