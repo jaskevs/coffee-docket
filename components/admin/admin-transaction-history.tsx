@@ -5,14 +5,14 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TransactionsTable } from "@/components/dashboard/transactions-table"
 import { supabaseService } from "@/lib/supabase-service"
-import type { Transaction } from "@/lib/supabase-service"
+import type { TransactionWithAddonNames } from "@/lib/supabase-service"
 
 interface AdminTransactionHistoryProps {
   onBack: () => void
 }
 
 export function AdminTransactionHistory({ onBack }: AdminTransactionHistoryProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<TransactionWithAddonNames[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function AdminTransactionHistory({ onBack }: AdminTransactionHistoryProps
 
   const loadTransactions = async () => {
     try {
-      const data = await supabaseService.getTransactions()
+      const data = await supabaseService.getTransactionsWithAddonNames()
       setTransactions(data)
     } catch (error) {
       console.error("Error loading transactions:", error)

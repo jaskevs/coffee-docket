@@ -6,10 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Transaction } from "@/lib/supabase-service"
+import type { Transaction, TransactionWithAddonNames } from "@/lib/supabase-service"
 
 interface TransactionsTableProps {
-  transactions: Transaction[]
+  transactions: (Transaction | TransactionWithAddonNames)[]
   customerName?: string
   showCustomerColumn?: boolean
 }

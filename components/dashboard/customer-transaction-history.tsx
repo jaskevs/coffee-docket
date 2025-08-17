@@ -7,15 +7,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabaseService } from "@/lib/supabase-service"
-import type { Transaction } from "@/lib/supabase-service"
+import type { Transaction, TransactionWithAddonNames } from "@/lib/supabase-service"
 
 interface CustomerTransactionHistoryProps {
   customerId: string
 }
 
 export function CustomerTransactionHistory({ customerId }: CustomerTransactionHistoryProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<TransactionWithAddonNames[]>([])
+  const [filteredTransactions, setFilteredTransactions] = useState<TransactionWithAddonNames[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<string>("all")
@@ -35,7 +35,7 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
     setError(null)
 
     try {
-      const data = await supabaseService.getCustomerTransactions(customerId)
+      const data = await supabaseService.getTransactionsWithAddonNames(customerId)
       setTransactions(data)
     } catch (err) {
       console.error("Error loading transactions:", err)
@@ -252,6 +252,12 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
                           <>
                             <span className="hidden sm:inline">•</span>
                             <span className="flex-shrink-0">{transaction.sizeName}</span>
+                          </>
+                        )}
+                        {transaction.addons && transaction.addons.length > 0 && (
+                          <>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">{transaction.addons.join(", ")}</span>
                           </>
                         )}
                       </div>

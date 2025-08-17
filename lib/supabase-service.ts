@@ -27,12 +27,18 @@ export interface Transaction {
   amount?: number
   drinkName?: string
   sizeName?: string
-  addons?: string[]
+  addons?: string[] // Store addon IDs instead of names
   discountAmount?: number
   notes?: string
   description?: string
   timestamp: string
   createdAt: string
+}
+
+// Transaction with addon names for display
+export interface TransactionWithAddonNames extends Omit<Transaction, 'addons'> {
+  addons?: string[] // Addon names for display
+  addonIds?: string[] // Original addon IDs
 }
 
 export interface CustomerStats {
@@ -616,6 +622,38 @@ class SupabaseService {
     return this.getTransactions(customerId)
   }
 
+  // Get transactions with addon names resolved for display
+  async getTransactionsWithAddonNames(customerId?: string): Promise<TransactionWithAddonNames[]> {
+    try {
+      const transactions = await this.getTransactions(customerId)
+      
+      // Convert addon IDs to names for all transactions
+      const transactionsWithNames = await Promise.all(
+        transactions.map(async (transaction) => {
+          if (transaction.addons && transaction.addons.length > 0) {
+            const addonNames = await this.getAddonNames(transaction.addons)
+            return {
+              ...transaction,
+              addons: addonNames, // Display names
+              addonIds: transaction.addons, // Keep original IDs
+            }
+          } else {
+            return {
+              ...transaction,
+              addons: [],
+              addonIds: [],
+            }
+          }
+        })
+      )
+      
+      return transactionsWithNames
+    } catch (error) {
+      console.error("Error getting transactions with addon names:", error)
+      return []
+    }
+  }
+
   async createTransaction(
     transaction: Omit<Transaction, "id" | "createdAt" | "customerName" | "timestamp">,
   ): Promise<Transaction> {
@@ -983,6 +1021,35 @@ class SupabaseService {
     } catch (error) {
       console.error("Error fetching menu addons:", error)
       return []
+    }
+  }
+
+  // Helper function to convert addon IDs to names for display
+  async getAddonNames(addonIds: string[]): Promise<string[]> {
+    try {
+      if (!addonIds || addonIds.length === 0) return []
+      
+      const supabase = await getSupabaseClient()
+      if (!supabase) return addonIds // Fallback to IDs if no client
+
+      const { data, error } = await supabase
+        .from("menu_addons")
+        .select("id, name")
+        .in("id", addonIds)
+
+      if (error) {
+        console.error("Error fetching addon names:", error)
+        return addonIds // Fallback to IDs if error
+      }
+
+      // Return names in the same order as the IDs
+      return addonIds.map(id => {
+        const addon = data.find(a => a.id === id)
+        return addon ? addon.name : id // Fallback to ID if addon not found
+      })
+    } catch (error) {
+      console.error("Error in getAddonNames:", error)
+      return addonIds // Fallback to IDs
     }
   }
 

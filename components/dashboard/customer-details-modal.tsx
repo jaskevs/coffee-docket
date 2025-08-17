@@ -28,6 +28,7 @@ import {
   supabaseService,
   type Customer,
   type Transaction,
+  type TransactionWithAddonNames,
   type MenuItem,
   type MenuSize,
   type MenuAddon,
@@ -53,7 +54,7 @@ export function CustomerDetailsModal({
   onEdit 
 }: CustomerDetailsModalProps) {
   const { user } = useAuth()
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<TransactionWithAddonNames[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Coffee serving state
@@ -89,7 +90,7 @@ export function CustomerDetailsModal({
 
     setIsLoading(true)
     try {
-      const customerTransactions = await supabaseService.getTransactions(customer.id)
+      const customerTransactions = await supabaseService.getTransactionsWithAddonNames(customer.id)
       setTransactions(customerTransactions)
     } catch (error) {
       console.error("Error loading transactions:", error)
@@ -191,7 +192,7 @@ export function CustomerDetailsModal({
         amount: totalAmount,
         drinkName: drinkName,
         sizeName: selectedSize.displayName,
-        addons: selectedAddonNames,
+        addons: selectedAddons, // Store addon IDs instead of names
         discountAmount: (perCoffeePrice * topUpForm.coffeeCount) * (topUpForm.discount / 100),
         notes: topUpForm.notes,
         description: `Top-up: ${topUpForm.coffeeCount} x ${drinkName}${selectedAddonNames.length > 0 ? ` with ${selectedAddonNames.join(", ")}` : ""}`,
@@ -564,6 +565,11 @@ export function CustomerDetailsModal({
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {transaction.description || transaction.drinkName || "Coffee purchase"}
+                              {transaction.addons && transaction.addons.length > 0 && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Add-ons: {transaction.addons.join(", ")}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
