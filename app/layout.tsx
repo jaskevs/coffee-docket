@@ -40,7 +40,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CoffeeDocket" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <meta name="theme-color" content="#4169E1" />
+        <meta name="theme-color" content="#283593" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js" async />
         <script dangerouslySetInnerHTML={{
           __html: `
