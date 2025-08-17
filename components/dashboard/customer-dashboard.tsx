@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CustomerTransactionHistory } from "./customer-transaction-history"
 import { supabaseService } from "@/lib/supabase-service"
 import type { Customer } from "@/lib/supabase-service"
+import { useSwipeGestures } from "@/hooks/useSwipeGestures"
+import { useHapticFeedback } from "@/hooks/useHapticFeedback"
 
 interface CustomerDashboardProps {
   userId: string
@@ -20,6 +22,17 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const { triggerSuccess, triggerSelection } = useHapticFeedback()
+  
+  // Swipe gesture for pull-to-refresh
+  const swipeRef = useSwipeGestures({
+    onSwipeDown: () => {
+      if (!isRefreshing) {
+        handleRefresh()
+      }
+    },
+    threshold: 100
+  })
 
   useEffect(() => {
     loadCustomerData()
@@ -57,8 +70,10 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
+    triggerSelection() // Haptic feedback for refresh
     await loadCustomerData()
     setIsRefreshing(false)
+    triggerSuccess() // Haptic feedback for completion
   }
 
   const getBalanceStatus = (balance: number) => {
@@ -125,7 +140,7 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
   const balanceStatus = getBalanceStatus(customer.balance)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50" ref={swipeRef}>
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-8">
@@ -140,7 +155,7 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
               disabled={isRefreshing} 
               variant="ghost" 
               size="sm"
-              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 h-auto ml-4"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-3 h-auto ml-4 min-h-[44px] min-w-[44px] active:scale-90 transition-transform duration-150 touch-manipulation"
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             </Button>
@@ -149,7 +164,7 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
         </div>
 
         {/* Coffee Balance Card */}
-        <Card className="mb-8 overflow-hidden relative bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
+        <Card className="mb-8 overflow-hidden relative bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-lg transition-all duration-300 hover:shadow-xl active:scale-[0.98] touch-manipulation">
           {/* Fun background animations */}
           <div className="absolute inset-0 opacity-50">
             <div className="absolute top-4 right-4 w-32 h-32 bg-gradient-to-br from-blue-200/60 to-purple-200/40 rounded-full blur-xl animate-bounce" style={{animationDuration: '3s', animationDelay: '0s'}}></div>
@@ -197,7 +212,7 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
         </Card>
 
         {/* Stats Card */}
-        <Card className="mb-8 border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 transition-all duration-300 hover:shadow-lg">
+        <Card className="mb-8 border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 transition-all duration-300 hover:shadow-lg active:scale-[0.98] touch-manipulation">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Visits Section */}

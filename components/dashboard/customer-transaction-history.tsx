@@ -229,7 +229,7 @@ export function CustomerTransactionHistory({ customerId }: CustomerTransactionHi
             {filteredTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-start sm:items-center justify-between p-3 sm:p-4 bg-white border rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                className="flex items-start sm:items-center justify-between p-3 sm:p-4 bg-white border rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 active:scale-[0.98] touch-manipulation min-h-[68px]"
               >
                 <div className="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
                   <div

@@ -39,10 +39,10 @@ export function CustomerCard({ customer, onClick }: CustomerCardProps) {
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow duration-200 border-gray-200 hover:border-gray-300"
+      className="cursor-pointer hover:shadow-md transition-shadow duration-200 border-gray-200 hover:border-gray-300 h-full"
       onClick={onClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 text-lg">
@@ -60,22 +60,16 @@ export function CustomerCard({ customer, onClick }: CustomerCardProps) {
           </div>
         </div>
 
-        <div className="space-y-2 text-sm text-gray-600">
+        <div className="space-y-2 text-sm text-gray-600 flex-1">
           <div className="flex items-center">
             <Mail className="w-4 h-4 mr-2 text-gray-400" />
-            <span className="truncate">{customer.email}</span>
+            <span className="truncate">{customer.email || "No email set"}</span>
           </div>
 
           <div className="flex items-center">
             <Clock className="w-4 h-4 mr-2 text-gray-400" />
             <span>Last seen {formatLastActivity(customer.lastVisit)}</span>
           </div>
-
-          {customer.visitCount && (
-            <div className="text-xs text-gray-500">
-              {customer.visitCount} visits • ${(customer.totalSpent || 0).toFixed(2)} spent
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

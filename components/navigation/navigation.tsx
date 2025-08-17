@@ -62,7 +62,7 @@ export function Navigation({ onNavigate }: NavigationProps) {
         {/* Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-50">
+            <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-50 min-h-[44px] px-3 active:scale-95 transition-transform duration-150">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-blue-500 text-white text-sm font-medium">
                   {getInitials(user.firstName, user.lastName)}
