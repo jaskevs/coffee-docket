@@ -125,64 +125,70 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
   const balanceStatus = getBalanceStatus(customer.balance)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100/50">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-              Welcome back, {customer.firstName}
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base mt-1">Manage your coffee balance</p>
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                Welcome back, {customer.firstName}
+              </h1>
+            </div>
+            <Button 
+              onClick={handleRefresh} 
+              disabled={isRefreshing} 
+              variant="ghost" 
+              size="sm"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 h-auto ml-4"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            </Button>
           </div>
-          <Button 
-            onClick={handleRefresh} 
-            disabled={isRefreshing} 
-            variant="ghost" 
-            size="sm"
-            className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 h-auto"
-          >
-            <RefreshCw className={`mr-1 h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <p className="text-gray-500 text-base font-medium">Manage your coffee balance</p>
         </div>
 
         {/* Coffee Balance Card */}
-        <Card className="mb-6 overflow-hidden relative bg-gradient-to-br from-white via-slate-50/30 to-blue-50/40">
+        <Card className="mb-8 overflow-hidden relative bg-gradient-to-br from-white to-gray-50/50 border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
+          {/* Fun background animations */}
           <div className="absolute inset-0 opacity-50">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-slate-50/20 animate-pulse" style={{animationDuration: '4s', animationTimingFunction: 'ease-in-out'}}></div>
-            <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-slate-100/10 to-transparent animate-pulse" style={{animationDuration: '6s', animationTimingFunction: 'ease-in-out', animationDelay: '1s'}}></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-50/15 to-transparent animate-pulse" style={{animationDuration: '8s', animationTimingFunction: 'ease-in-out', animationDelay: '2s'}}></div>
+            <div className="absolute top-4 right-4 w-32 h-32 bg-gradient-to-br from-blue-200/60 to-purple-200/40 rounded-full blur-xl animate-bounce" style={{animationDuration: '3s', animationDelay: '0s'}}></div>
+            <div className="absolute bottom-4 left-4 w-24 h-24 bg-gradient-to-tr from-green-200/60 to-blue-200/40 rounded-full blur-lg animate-ping" style={{animationDuration: '2s', animationDelay: '1s'}}></div>
+            <div className="absolute top-1/2 left-1/2 w-16 h-16 bg-gradient-to-r from-pink-200/50 to-yellow-200/50 rounded-full blur-md animate-spin" style={{animationDuration: '8s', animationDelay: '0.5s', transform: 'translate(-50%, -50%)'}}></div>
           </div>
-          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-blue-100/8 via-slate-50/4 to-transparent rounded-full transform translate-x-24 -translate-y-24 animate-pulse" style={{animationDuration: '10s', animationTimingFunction: 'ease-in-out'}}></div>
-          <div className="absolute bottom-0 left-0 w-36 h-36 bg-gradient-to-tr from-slate-100/6 via-blue-50/3 to-transparent rounded-full transform -translate-x-18 translate-y-18 animate-pulse" style={{animationDuration: '12s', animationTimingFunction: 'ease-in-out', animationDelay: '3s'}}></div>
-          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-gradient-to-r from-transparent via-slate-50/8 to-transparent rounded-full transform -translate-x-12 -translate-y-12 animate-pulse" style={{animationDuration: '14s', animationTimingFunction: 'ease-in-out', animationDelay: '5s'}}></div>
-          <CardContent className="p-6 text-center relative z-10">
+          
+          <CardContent className="p-6 sm:p-8 text-center relative z-10">
             <div className="flex items-center justify-between mb-6">
-              <Badge className={`${balanceStatus.color} ${balanceStatus.bg} ${balanceStatus.border} border shadow-sm`}>
+              <Badge 
+                className={`${balanceStatus.color} ${balanceStatus.bg} ${balanceStatus.border} border-0 font-medium px-3 py-1 shadow-sm`}
+              >
                 {balanceStatus.status}
               </Badge>
-              <Coffee className="w-5 h-5 text-gray-400" />
+              <div className="p-2 bg-gray-100 rounded-full">
+                <Coffee className="w-5 h-5 text-gray-600" />
+              </div>
             </div>
 
-            <div className="text-5xl sm:text-6xl font-bold text-gray-900 mb-2 tabular-nums">
-              {customer.balance}
+            <div className="space-y-3 mb-6">
+              <div className="text-6xl sm:text-7xl font-bold text-gray-900 tabular-nums leading-none">
+                {customer.balance}
+              </div>
+              <p className="text-gray-600 text-xl font-medium">
+                Coffee{customer.balance !== 1 ? "s" : ""} Available
+              </p>
             </div>
-            <p className="text-gray-600 text-lg mb-4">
-              Coffee{customer.balance !== 1 ? "s" : ""} Available
-            </p>
 
             {customer.balance <= 3 && customer.balance > 0 && (
-              <div className="mt-4 p-3 bg-amber-50/90 backdrop-blur-sm rounded-xl border border-amber-200/60 shadow-sm">
-                <p className="text-sm text-amber-800">
-                  Low balance. Consider asking staff to top up.
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200/50">
+                <p className="text-sm text-amber-700 font-medium">
+                  Running low! Consider asking staff to top up.
                 </p>
               </div>
             )}
 
             {customer.balance === 0 && (
-              <div className="mt-4 p-3 bg-red-50/90 backdrop-blur-sm rounded-xl border border-red-200/60 shadow-sm">
-                <p className="text-sm text-red-800">
+              <div className="p-4 bg-red-50 rounded-2xl border border-red-200/50">
+                <p className="text-sm text-red-700 font-medium">
                   Balance empty. Please ask staff to add credits.
                 </p>
               </div>
@@ -191,25 +197,42 @@ export function CustomerDashboard({ userId, userEmail }: CustomerDashboardProps)
         </Card>
 
         {/* Stats Card */}
-        <Card className="mb-6">
+        <Card className="mb-8 border-0 shadow-md bg-gradient-to-br from-white to-gray-50/50 transition-all duration-300 hover:shadow-lg">
           <CardContent className="p-6">
-            <div className="grid grid-cols-2 gap-6 text-center">
-              <div>
-                <User className="w-5 h-5 text-gray-400 mx-auto mb-2" />
-                <div className="text-lg font-semibold text-gray-900">{customer.visitCount || 0}</div>
-                <div className="text-xs text-gray-600">Total Visits</div>
-                {customer.lastVisit && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Last: {new Date(customer.lastVisit).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-              <div>
-                <Calendar className="w-5 h-5 text-gray-400 mx-auto mb-2" />
-                <div className="text-lg font-semibold text-gray-900">
-                  {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "N/A"}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Visits Section */}
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-blue-100 rounded-xl">
+                  <User className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="text-xs text-gray-600">Member Since</div>
+                <div className="flex-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1 tabular-nums">
+                    {customer.visitCount || 0}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600 mb-1">Total Visits</div>
+                  {customer.lastVisit && (
+                    <div className="text-xs text-gray-500">
+                      Last: {new Date(customer.lastVisit).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Member Since Section */}
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-green-100 rounded-xl">
+                  <Calendar className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-lg font-bold text-gray-900 mb-1 leading-tight">
+                    {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    }) : "N/A"}
+                  </div>
+                  <div className="text-sm font-medium text-gray-600">Member Since</div>
+                </div>
               </div>
             </div>
           </CardContent>

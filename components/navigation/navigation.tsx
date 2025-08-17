@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAuth } from "@/contexts/auth-context"
+import { useState, useEffect } from "react"
 
 interface NavigationProps {
   onNavigate: (page: string) => void
@@ -26,6 +27,18 @@ function getInitials(firstName?: string, lastName?: string): string {
 
 export function Navigation({ onNavigate }: NavigationProps) {
   const { user, logout } = useAuth()
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -55,9 +68,11 @@ export function Navigation({ onNavigate }: NavigationProps) {
                   {getInitials(user.firstName, user.lastName)}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-gray-700">
-                {user.firstName} {user.lastName}
-              </span>
+              {!isMobile && (
+                <span className="text-sm font-medium text-gray-700">
+                  {user.firstName} {user.lastName}
+                </span>
+              )}
               <ChevronDown className="h-4 w-4 text-gray-500" />
             </Button>
           </DropdownMenuTrigger>
