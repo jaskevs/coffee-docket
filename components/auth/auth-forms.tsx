@@ -50,7 +50,7 @@ export function AuthForms() {
               <Coffee className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">CoffeeTracker</h1>
+              <h1 className="text-3xl font-bold text-gray-800">CoffeeDocket</h1>
               <p className="text-sm text-gray-600 flex items-center">
                 <Sparkles className="w-3 h-3 mr-1" />
                 Track your perfect brew
@@ -316,7 +316,7 @@ export function AuthForms() {
         </Card>
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">© 2025 CoffeeTracker. Made with ☕ and love.</p>
+          <p className="text-xs text-gray-500">© 2025 CoffeeDocket. Made with ☕ and love.</p>
         </div>
       </div>
     </div>

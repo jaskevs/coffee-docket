@@ -9,7 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "CoffeeTracker 2.0",
+  title: "CoffeeDocket 2.0",
   description: "Track your perfect brew with advanced coffee management",
     generator: 'v0.dev'
 }

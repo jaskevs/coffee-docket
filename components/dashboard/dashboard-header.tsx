@@ -36,7 +36,7 @@ export function DashboardHeader({ userName, userEmail, onLogout, onProfile }: Da
             <Coffee className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-coffee-800">CoffeeTracker</h1>
+            <h1 className="text-xl font-bold text-coffee-800">CoffeeDocket</h1>
             <p className="text-xs text-gray-600">Welcome back, {userName || "User"}</p>
           </div>
         </div>

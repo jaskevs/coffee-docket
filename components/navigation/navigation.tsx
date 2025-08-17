@@ -43,7 +43,7 @@ export function Navigation({ onNavigate }: NavigationProps) {
       <div className="flex items-center justify-between">
         {/* Logo/Title */}
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-900">CoffeeTracker</h1>
+          <h1 className="text-2xl font-bold text-gray-900">CoffeeDocket</h1>
         </div>
 
         {/* Profile Dropdown */}

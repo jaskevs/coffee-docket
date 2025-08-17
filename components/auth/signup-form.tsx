@@ -77,7 +77,7 @@ export function SignUpForm({ onBackToLogin }: SignUpFormProps) {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <CardTitle className="text-2xl font-bold text-gray-900">Join CoffeeTracker</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">Join CoffeeDocket</CardTitle>
           </div>
           <CardDescription className="text-gray-600">
             Create your account to start tracking your coffee journey

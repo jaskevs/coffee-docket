@@ -168,7 +168,7 @@ export function LoginForm({ onForgotPassword, onSignUp }: LoginFormProps) {
               <span className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-600">New to CoffeeTracker?</span>
+              <span className="bg-white px-2 text-gray-600">New to CoffeeDocket?</span>
             </div>
           </div>
 

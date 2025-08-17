@@ -50,7 +50,7 @@ export function AuthContainer({ initialMode = "login", onModeChange }: AuthConta
               <Coffee className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">CoffeeTracker</h1>
+              <h1 className="text-3xl font-bold text-gray-900">CoffeeDocket</h1>
               <p className="text-sm text-gray-600">Track your perfect brew</p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export function AuthContainer({ initialMode = "login", onModeChange }: AuthConta
       <div className="sm:mx-auto sm:w-full sm:max-w-md">{renderForm()}</div>
 
       <div className="mt-8 text-center">
-        <p className="text-xs text-gray-500">© 2025 CoffeeTracker. Made with ☕ and love.</p>
+        <p className="text-xs text-gray-500">© 2025 CoffeeDocket. Made with ☕ and love.</p>
       </div>
     </div>
   )
