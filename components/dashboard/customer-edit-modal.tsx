@@ -22,6 +22,7 @@ import {
   Loader2,
   AlertCircle,
   Trash2,
+  CheckCircle,
 } from "lucide-react"
 import { supabaseService, type Customer } from "@/lib/supabase-service"
 
@@ -55,6 +56,7 @@ export function CustomerEditModal({
   const [isSendingAuth, setIsSendingAuth] = useState(false)
   const [authEmailSent, setAuthEmailSent] = useState(false)
   const [authError, setAuthError] = useState<string>("")
+  const [tempPassword, setTempPassword] = useState<string>("")
 
   // Update form when customer changes
   React.useEffect(() => {
@@ -70,6 +72,7 @@ export function CustomerEditModal({
       })
       setAuthEmailSent(false)
       setAuthError("")
+      setTempPassword("")
     }
   }, [customer])
 
@@ -130,21 +133,45 @@ export function CustomerEditModal({
   const handleSendAuthEmail = async () => {
     if (!customer || !editForm.email) return
 
+    console.log("=== SEND AUTH EMAIL STARTED ===")
+    console.log("Customer:", customer.firstName, customer.lastName)
+    console.log("Email:", editForm.email)
+    console.log("Has existing email:", !!customer.email)
+    
     setIsSendingAuth(true)
     setAuthError("")
 
     try {
-      // First save the email change
-      await handleSave()
+      // Only save if email changed
+      if (editForm.email !== customer.email) {
+        console.log("Email changed, saving customer first...")
+        await handleSave()
+      }
       
-      // Then send authentication setup email using Supabase Auth
+      // Send authentication setup email using Supabase Auth
+      console.log("Sending auth invitation...")
       const result = await supabaseService.sendAuthInvitation(editForm.email, {
         firstName: editForm.firstName,
-        lastName: editForm.lastName
+        lastName: editForm.lastName,
+        customerId: customer.id // Pass the customer ID to link the accounts
       })
       
       if (result.success) {
+        console.log("Auth invitation sent successfully")
         setAuthEmailSent(true)
+        setAuthError("") // Clear any previous errors
+        
+        // If temp password was returned, store it to show to admin
+        if (result.tempPassword) {
+          setTempPassword(result.tempPassword)
+          console.log("Temporary password created:", result.tempPassword)
+        }
+        
+        // Keep success message visible longer if temp password is shown
+        setTimeout(() => {
+          setAuthEmailSent(false)
+          setTempPassword("")
+        }, 15000)
       } else {
         throw new Error(result.error || "Failed to send authentication email")
       }
@@ -154,6 +181,7 @@ export function CustomerEditModal({
       setAuthError(error instanceof Error ? error.message : "Failed to send authentication email")
     } finally {
       setIsSendingAuth(false)
+      console.log("=== SEND AUTH EMAIL COMPLETED ===")
     }
   }
 
@@ -161,6 +189,7 @@ export function CustomerEditModal({
     setShowDeleteConfirmation(false)
     setAuthEmailSent(false)
     setAuthError("")
+    setTempPassword("")
     onClose()
   }
 
@@ -251,9 +280,27 @@ export function CustomerEditModal({
                   )}
                   
                   {authEmailSent && (
-                    <div className="flex items-center text-green-600 text-sm">
-                      <Mail className="w-4 h-4 mr-1" />
-                      Authentication email sent successfully!
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-green-800">Authentication created successfully!</p>
+                          <p className="text-green-700 mt-1">
+                            The customer can now sign in with their email address.
+                          </p>
+                          {tempPassword && (
+                            <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-2">
+                              <p className="font-medium text-blue-800 text-xs mb-1">Temporary Password:</p>
+                              <code className="bg-white px-2 py-1 rounded text-blue-900 font-mono text-xs border">
+                                {tempPassword}
+                              </code>
+                              <p className="text-blue-700 text-xs mt-1">
+                                Share this with the customer or they can reset their password on the login page.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                   {authError && (

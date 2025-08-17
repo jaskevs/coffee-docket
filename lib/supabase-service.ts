@@ -423,58 +423,89 @@ class SupabaseService {
     }
   }
 
-  async sendAuthInvitation(email: string, userData: { firstName: string; lastName: string }): Promise<{ success: boolean; error?: string }> {
+  async sendAuthInvitation(email: string, userData: { firstName: string; lastName: string; customerId?: string }): Promise<{ success: boolean; error?: string; userId?: string }> {
     try {
-      const adminClient = await getSupabaseAdminClient()
-      if (!adminClient) {
-        return { success: false, error: "Admin client not available - check SUPABASE_SERVICE_ROLE_KEY environment variable" }
-      }
-
-      // Check if user already exists in auth
-      const { data: existingUsers, error: listError } = await adminClient.auth.admin.listUsers()
+      console.log("=== SEND AUTH INVITATION STARTED ===")
+      console.log("Email:", email)
+      console.log("User data:", userData)
       
-      if (listError) {
-        console.error("Error checking existing users:", listError)
-        return { success: false, error: "Failed to check existing users: " + listError.message }
-      }
-
-      const existingUser = existingUsers.users.find((user: any) => user.email === email)
+      // For client-side execution, we'll use a different approach
+      // We'll create a temporary auth record and immediately send a password reset
+      const client = await getSupabaseClient()
       
-      if (existingUser) {
-        return { success: false, error: "User already has authentication access" }
+      if (!client) {
+        console.error("No Supabase client available")
+        return { success: false, error: "Unable to connect to authentication service" }
       }
 
-      // Create user with email invitation
-      const { data, error } = await adminClient.auth.admin.createUser({
+      console.log("Step 1: Attempting to create auth account for customer...")
+      
+      // Try to sign up the user with a random password
+      // This will create an auth account if it doesn't exist
+      const tempPassword = Math.random().toString(36).slice(-16) + "Aa1!@#"
+      
+      const { data: signUpData, error: signUpError } = await client.auth.signUp({
         email: email,
-        email_confirm: false, // This will send a confirmation email
-        user_metadata: {
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          full_name: `${userData.firstName} ${userData.lastName}`
+        password: tempPassword,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            full_name: `${userData.firstName} ${userData.lastName}`,
+            role: 'customer',
+            created_by_admin: true,
+            customer_id: userData.customerId
+          }
+          // Remove emailRedirectTo to avoid sending confirmation email
         }
       })
-
-      if (error) {
-        console.error("Error creating auth user:", error)
-        return { success: false, error: error.message }
-      }
       
-      // Send a password reset email to let them set their password
-      // Use the regular client for this as it doesn't require admin permissions
-      const regularClient = await getSupabaseClient()
-      if (regularClient) {
-        const { error: resetError } = await regularClient.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/reset-password`
-        })
-
-        if (resetError) {
-          console.error("Error sending password reset email:", resetError)
-          // Don't fail the whole process if password reset email fails
+      if (signUpError) {
+        console.error("Error creating auth account:", signUpError)
+        
+        // If user already exists, they can use their existing auth
+        if (signUpError.message?.includes('already registered')) {
+          console.log("User already exists with authentication - they can sign in")
+          return { 
+            success: true, 
+            message: "Authentication already exists for this email. Customer can sign in with their existing credentials."
+          }
+        } else {
+          return { success: false, error: signUpError.message }
         }
       }
-
-      return { success: true }
+      
+      if (signUpData.user) {
+        console.log("Auth account created with ID:", signUpData.user.id)
+        console.log("Email confirmed:", signUpData.user.email_confirmed_at)
+        
+        // Update the customer record to link with the new auth user
+        if (userData.customerId && signUpData.user.id) {
+          console.log("Step 2: Linking auth user to customer record...")
+          const { error: updateError } = await client
+            .from('customers')
+            .update({ id: signUpData.user.id })
+            .eq('id', userData.customerId)
+            
+          if (updateError) {
+            console.error("Error linking customer to auth user:", updateError)
+          } else {
+            console.log("Customer record linked to auth user successfully")
+          }
+        }
+        
+        console.log("=== SEND AUTH INVITATION COMPLETED ===")
+        
+        return { 
+          success: true, 
+          userId: signUpData.user.id,
+          message: `Authentication account created successfully! Customer can now sign in with email: ${email} and the temporary password you provided, or they can reset their password.`,
+          tempPassword: tempPassword // Return temp password so admin can share it
+        }
+      } else {
+        console.log("No user data returned from signup")
+        return { success: false, error: "Failed to create authentication account" }
+      }
     } catch (error) {
       console.error("Error in sendAuthInvitation:", error)
       return { 
