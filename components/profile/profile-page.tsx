@@ -26,7 +26,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [customerLoading, setCustomerLoading] = useState(true)
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -52,7 +51,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
@@ -222,6 +220,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("=== PASSWORD CHANGE STARTED ===")
     setPasswordMessage(null)
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
@@ -236,20 +235,39 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
     setIsPasswordLoading(true)
     try {
-      await changePassword({
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-        confirmPassword: passwordForm.confirmPassword,
+      // Use Supabase updateUser directly without requiring current password
+      if (!supabaseClient) {
+        throw new Error("Authentication service not available")
+      }
+
+      console.log("Updating password via Supabase...")
+      const { error } = await supabaseClient.auth.updateUser({
+        password: passwordForm.newPassword
       })
+
+      if (error) {
+        console.error("Password update error:", error)
+        throw error
+      }
+
+      console.log("Password updated successfully")
       setPasswordForm({
-        currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       })
       setPasswordMessage({ type: "success", text: "Password changed successfully!" })
-    } catch (error) {
+      console.log("=== PASSWORD CHANGE COMPLETED ===")
+    } catch (error: any) {
       console.error("Error changing password:", error)
-      setPasswordMessage({ type: "error", text: "Failed to change password. Please try again." })
+      
+      // Handle specific Supabase errors
+      if (error.message?.includes('weak_password')) {
+        setPasswordMessage({ type: "error", text: "Password is too weak. Please choose a stronger password." })
+      } else if (error.message?.includes('rate_limit')) {
+        setPasswordMessage({ type: "error", text: "Too many password change attempts. Please wait before trying again." })
+      } else {
+        setPasswordMessage({ type: "error", text: error.message || "Failed to change password. Please try again." })
+      }
     } finally {
       setIsPasswordLoading(false)
     }
@@ -488,27 +506,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="currentPassword"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password</Label>
                   <div className="relative">
@@ -836,28 +833,6 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showCurrentPassword ? "text" : "password"}
-                        value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                        placeholder="Enter current password"
-                        required
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      >
-                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="newPassword">New Password</Label>
