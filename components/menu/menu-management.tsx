@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Plus, Edit, Trash2, Coffee, DollarSign, ArrowLeft } from "lucide-react"
 import { MenuItemModal } from "./menu-item-modal"
 import { SizeModal } from "./size-modal"
@@ -33,6 +43,12 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
   const [editingSize, setEditingSize] = useState<MenuSize | null>(null)
   const [editingAddon, setEditingAddon] = useState<MenuAddon | null>(null)
   const [loading, setLoading] = useState(true)
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean
+    type: 'item' | 'size' | 'addon'
+    id: string
+    name: string
+  }>({ isOpen: false, type: 'item', id: '', name: '' })
 
   useEffect(() => {
     loadData()
@@ -81,6 +97,15 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
     }
   }
 
+  const confirmDeleteItem = (item: MenuItem) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'item',
+      id: item.id,
+      name: item.name
+    })
+  }
+
   const handleSaveSize = async (size: MenuSize) => {
     try {
       if (editingSize) {
@@ -106,6 +131,15 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
     }
   }
 
+  const confirmDeleteSize = (size: MenuSize) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'size',
+      id: size.id,
+      name: size.displayName || size.name
+    })
+  }
+
   const handleSaveAddon = async (addon: MenuAddon) => {
     try {
       if (editingAddon) {
@@ -129,6 +163,29 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
     } catch (error) {
       console.error("Error deleting menu addon:", error)
     }
+  }
+
+  const confirmDeleteAddon = (addon: MenuAddon) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      type: 'addon',
+      id: addon.id,
+      name: addon.name
+    })
+  }
+
+  const handleConfirmDelete = async () => {
+    const { type, id } = deleteConfirmation
+    
+    if (type === 'item') {
+      await handleDeleteItem(id)
+    } else if (type === 'size') {
+      await handleDeleteSize(id)
+    } else if (type === 'addon') {
+      await handleDeleteAddon(id)
+    }
+    
+    setDeleteConfirmation({ isOpen: false, type: 'item', id: '', name: '' })
   }
 
   const getCategoryIcon = (categoryId: string) => {
@@ -207,7 +264,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => confirmDeleteItem(item)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -261,7 +318,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteSize(size.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => confirmDeleteSize(size)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -304,7 +361,7 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteAddon(addon.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => confirmDeleteAddon(addon)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -346,6 +403,29 @@ export function MenuManagement({ onNavigate }: MenuManagementProps) {
         addon={editingAddon}
         onSave={handleSaveAddon}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmation.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setDeleteConfirmation({ isOpen: false, type: 'item', id: '', name: '' })
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deleteConfirmation.name}" from your menu. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
