@@ -3,7 +3,6 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 import { useIOSModalFix } from "@/hooks/use-ios-modal-fix"
 
@@ -22,7 +21,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
@@ -30,10 +29,14 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-const DialogContent = React.forwardRef<
+interface IOSSafeDialogContentProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+  disableIOSFix?: boolean
+}
+
+const IOSSafeDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => {
+  IOSSafeDialogContentProps
+>(({ className, children, disableIOSFix = false, ...props }, ref) => {
   const { isIOS, keyboardHeight, preventAutoFocus, safeModalHeight } = useIOSModalFix()
   const contentRef = React.useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = React.useState(false)
@@ -57,18 +60,18 @@ const DialogContent = React.forwardRef<
   }, [])
 
   React.useEffect(() => {
-    if (isOpen && isIOS && contentRef.current) {
+    if (isOpen && !disableIOSFix && isIOS && contentRef.current) {
       // Prevent auto-focus on iOS devices
       preventAutoFocus(contentRef.current)
       
       // Focus the dialog container instead of any input
       contentRef.current.focus({ preventScroll: true })
     }
-  }, [isOpen, isIOS, preventAutoFocus])
+  }, [isOpen, disableIOSFix, isIOS, preventAutoFocus])
 
   // Calculate dynamic styles for iOS keyboard
   const dynamicStyles = React.useMemo(() => {
-    if (!isIOS) return {}
+    if (!isIOS || disableIOSFix) return {}
     
     if (keyboardHeight > 0) {
       return {
@@ -77,7 +80,7 @@ const DialogContent = React.forwardRef<
       }
     }
     return {}
-  }, [isIOS, keyboardHeight, safeModalHeight])
+  }, [isIOS, disableIOSFix, keyboardHeight, safeModalHeight])
 
   return (
     <DialogPortal>
@@ -98,7 +101,7 @@ const DialogContent = React.forwardRef<
           "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
           "sm:rounded-lg",
           // iOS-specific styles
-          isIOS && [
+          isIOS && !disableIOSFix && [
             "max-h-[90dvh]", // Use dynamic viewport height
             "overflow-y-auto", // Allow scrolling if content is too tall
             keyboardHeight > 0 && "transition-transform duration-300", // Smooth transition when keyboard appears
@@ -117,7 +120,7 @@ const DialogContent = React.forwardRef<
     </DialogPortal>
   )
 })
-DialogContent.displayName = DialogPrimitive.Content.displayName
+IOSSafeDialogContent.displayName = "IOSSafeDialogContent"
 
 const DialogHeader = ({
   className,
@@ -174,13 +177,15 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+// Export both the iOS-safe version and regular version
 export {
   Dialog,
   DialogPortal,
   DialogOverlay,
   DialogClose,
   DialogTrigger,
-  DialogContent,
+  IOSSafeDialogContent,
+  IOSSafeDialogContent as DialogContent, // Use iOS-safe version as default
   DialogHeader,
   DialogFooter,
   DialogTitle,
