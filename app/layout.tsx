@@ -35,11 +35,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/x-icon" href="/icons/web/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/web/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icons/web/icon-512.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CoffeeDocket" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/icons/web/apple-touch-icon.png" />
         <meta name="theme-color" content="#283593" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js" async />
         <script dangerouslySetInnerHTML={{
