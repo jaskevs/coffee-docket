@@ -429,7 +429,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Attempting password reset for:", email)
 
         const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         })
 
         if (error) {
@@ -491,7 +491,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const { data: authUsers, error: listError } = await adminClient.auth.admin.listUsers()
               
               if (!listError && authUsers) {
-                const authUser = authUsers.users.find((user: any) => user.email === authState.user.email)
+                const authUser = authUsers.users.find((user: any) => user.email === authState.user?.email)
                 
                 if (authUser) {
                   // Update the auth user's email
