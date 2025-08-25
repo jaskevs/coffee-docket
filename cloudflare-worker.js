@@ -3,17 +3,6 @@ export default {
       // Your actual Supabase project URL
       const SUPABASE_URL = 'https://nreuhxvzhpmtopgltefu.supabase.co';
       
-      // Parse the request URL
-      const url = new URL(request.url);
-      
-      // Handle auth redirects - redirect to your app's callback page
-      if (url.pathname === '/' || url.pathname === '') {
-        const hash = url.hash || '';
-        const redirectUrl = `https://coffee-docket.vercel.app/auth/callback${hash}`;
-        
-        return Response.redirect(redirectUrl, 302);
-      }
-      
       // Handle CORS preflight requests
       if (request.method === 'OPTIONS') {
         return new Response(null, {
@@ -27,7 +16,8 @@ export default {
       }
   
       try {
-        // Get the path and query parameters from the original request (url already declared above)
+        // Get the path and query parameters from the original request
+        const url = new URL(request.url);
         const targetUrl = SUPABASE_URL + url.pathname + url.search;
   
         // Create a new request to Supabase
